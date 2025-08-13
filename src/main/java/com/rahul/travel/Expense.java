@@ -1,23 +1,51 @@
 package com.rahul.travel;
 
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import java.time.LocalDate;
-import java.util.List;
+import jakarta.persistence.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
+@Table(name = "expenses")
 public class Expense {
   @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
   private String id;
+
+  @Column(nullable = false)
   private String tripId;
+
   private String title;
-  private double amount;
+
+  @Column(nullable = false)
+  private Double amount;
+
   private String category;
-  private LocalDate date;
+  private LocalDateTime date;
+
   private String paidBy;
-  @ElementCollection
-  private List<String> sharedWith;
+
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name = "expense_shared_with", joinColumns = @JoinColumn(name = "expense_id"))
+  @Column(name = "participant")
+  private Set<String> sharedWith = new HashSet<>();
+
+  private Instant createdAt;
+  private Instant updatedAt;
+
+  @PrePersist
+  void onCreate() {
+    createdAt = updatedAt = Instant.now();
+    if (date == null) {
+      date = LocalDateTime.now();
+    }
+  }
+
+  @PreUpdate
+  void onUpdate() {
+    updatedAt = Instant.now();
+  }
 
   public Expense() {}
 
@@ -45,11 +73,11 @@ public class Expense {
     this.title = title;
   }
 
-  public double getAmount() {
+  public Double getAmount() {
     return amount;
   }
 
-  public void setAmount(double amount) {
+  public void setAmount(Double amount) {
     this.amount = amount;
   }
 
@@ -61,11 +89,11 @@ public class Expense {
     this.category = category;
   }
 
-  public LocalDate getDate() {
+  public LocalDateTime getDate() {
     return date;
   }
 
-  public void setDate(LocalDate date) {
+  public void setDate(LocalDateTime date) {
     this.date = date;
   }
 
@@ -77,11 +105,20 @@ public class Expense {
     this.paidBy = paidBy;
   }
 
-  public List<String> getSharedWith() {
+  public Set<String> getSharedWith() {
     return sharedWith;
   }
 
-  public void setSharedWith(List<String> sharedWith) {
+  public void setSharedWith(Set<String> sharedWith) {
     this.sharedWith = sharedWith;
   }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
 }
+
