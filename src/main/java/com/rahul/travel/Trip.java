@@ -1,22 +1,43 @@
 package com.rahul.travel;
 
-import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
+@Table(name = "trips")
 public class Trip {
   @Id
+  @GeneratedValue(strategy = GenerationType.UUID)
   private String id;
+
   private String name;
+
   private LocalDate startDate;
   private LocalDate endDate;
-  private double initialBudget;
+
   private String currency;
-  @ElementCollection
-  private List<String> participants;
+  private Double initialBudget;
+
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name = "trip_participants", joinColumns = @JoinColumn(name = "trip_id"))
+  @Column(name = "participant")
+  private Set<String> participants = new HashSet<>();
+
+  private Instant createdAt;
+  private Instant updatedAt;
+
+  @PrePersist
+  void onCreate() {
+    createdAt = updatedAt = Instant.now();
+  }
+
+  @PreUpdate
+  void onUpdate() {
+    updatedAt = Instant.now();
+  }
 
   public Trip() {}
 
@@ -52,14 +73,6 @@ public class Trip {
     this.endDate = endDate;
   }
 
-  public double getInitialBudget() {
-    return initialBudget;
-  }
-
-  public void setInitialBudget(double initialBudget) {
-    this.initialBudget = initialBudget;
-  }
-
   public String getCurrency() {
     return currency;
   }
@@ -68,11 +81,28 @@ public class Trip {
     this.currency = currency;
   }
 
-  public List<String> getParticipants() {
+  public Double getInitialBudget() {
+    return initialBudget;
+  }
+
+  public void setInitialBudget(Double initialBudget) {
+    this.initialBudget = initialBudget;
+  }
+
+  public Set<String> getParticipants() {
     return participants;
   }
 
-  public void setParticipants(List<String> participants) {
+  public void setParticipants(Set<String> participants) {
     this.participants = participants;
   }
+
+  public Instant getCreatedAt() {
+    return createdAt;
+  }
+
+  public Instant getUpdatedAt() {
+    return updatedAt;
+  }
 }
+

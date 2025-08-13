@@ -1,55 +1,42 @@
 package com.rahul.travel;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import com.rahul.travel.dto.ExpenseDTO;
+import jakarta.validation.Valid;
 import java.util.List;
-import java.util.Map;
-
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Set;
 import org.springframework.web.bind.annotation.*;
 
-@CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/expenses")
 public class ExpenseController {
-  @Autowired private ExpenseRepository repo;
+  private final ExpenseRepository expenses;
+
+  public ExpenseController(ExpenseRepository expenses) {
+    this.expenses = expenses;
+  }
 
   @PostMapping
-  public Expense save(@RequestBody Expense exp) {
-    return repo.save(exp);
+  public ExpenseDTO create(@RequestBody @Valid ExpenseDTO dto) {
+    Expense e = new Expense();
+    e.setTripId(dto.tripId());
+    e.setTitle(dto.title());
+    e.setAmount(dto.amount());
+    e.setCategory(dto.category());
+    e.setDate(dto.date());
+    e.setPaidBy(dto.paidBy());
+    e.setSharedWith(dto.sharedWith() == null ? Set.of() : dto.sharedWith());
+    e = expenses.save(e);
+    return toDTO(e);
   }
 
   @GetMapping("/{tripId}")
-  public List<Expense> getByTrip(@PathVariable String tripId) {
-    return repo.findByTripId(tripId);
+  public List<ExpenseDTO> byTrip(@PathVariable String tripId) {
+    return expenses.findByTripIdOrderByDateDesc(tripId).stream().map(this::toDTO).toList();
   }
 
-  @GetMapping("/split/{tripId}")
-  public List<GroupBalance> splitTrip(@PathVariable String tripId) {
-    List<Expense> expenses = repo.findByTripId(tripId);
-    Map<String, Map<String, Double>> balanceSheet = new HashMap<>();
-
-    for (Expense e : expenses) {
-      int n = e.getSharedWith().size();
-      double share = e.getAmount() / n;
-      for (String user : e.getSharedWith()) {
-        if (!user.equals(e.getPaidBy())) {
-          balanceSheet.putIfAbsent(user, new HashMap<>());
-          Map<String, Double> owesTo = balanceSheet.get(user);
-
-          owesTo.put(e.getPaidBy(), owesTo.getOrDefault(e.getPaidBy(), 0.0) + share);
-        }
-      }
-    }
-
-    List<GroupBalance> results = new ArrayList<>();
-    for (String user : balanceSheet.keySet()) {
-      GroupBalance gb = new GroupBalance();
-      gb.setUser(user);
-      gb.setOwes(balanceSheet.get(user));
-      results.add(gb);
-    }
-
-    return results;
+  private ExpenseDTO toDTO(Expense e) {
+    return new ExpenseDTO(e.getId(), e.getTripId(), e.getTitle(), e.getAmount(),
+        e.getCategory(), e.getDate(), e.getPaidBy(), e.getSharedWith());
   }
 }
+
