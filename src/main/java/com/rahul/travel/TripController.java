@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/trips")
+@CrossOrigin(origins = "*")
 public class TripController {
   @Autowired private TripRepository repo;
 
