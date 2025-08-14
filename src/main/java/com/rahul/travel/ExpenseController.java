@@ -5,9 +5,11 @@ import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Set;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/expenses")
+@Slf4j
 public class ExpenseController {
   private final ExpenseRepository expenses;
 
@@ -17,6 +19,7 @@ public class ExpenseController {
 
   @PostMapping
   public ExpenseDTO create(@RequestBody @Valid ExpenseDTO dto) {
+    log.info("Received request to create expense for trip {}", dto.tripId());
     Expense e = new Expense();
     e.setTripId(dto.tripId());
     e.setTitle(dto.title());
@@ -31,6 +34,7 @@ public class ExpenseController {
 
   @GetMapping("/{tripId}")
   public List<ExpenseDTO> byTrip(@PathVariable String tripId) {
+    log.info("Received request to list expenses for trip {}", tripId);
     return expenses.findByTripIdOrderByDateDesc(tripId).stream().map(this::toDTO).toList();
   }
 
