@@ -6,10 +6,13 @@ import com.rahul.travel.dto.GroupBalanceDTO;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 public class SplitService {
   public List<GroupBalanceDTO> computeBalances(Trip trip, List<Expense> expenses) {
+    log.info("Processing {} expenses for trip {}", expenses.size(), trip.getId());
     Map<String, Double> net = trip.getParticipants().stream()
         .collect(Collectors.toMap(p -> p, p -> 0.0));
 
@@ -46,6 +49,7 @@ public class SplitService {
       if (dRem < 0) debtors.add(new Node(d.name(), dRem));
       if (cRem > 0) creditors.add(new Node(c.name(), cRem));
     }
+    log.info("Computed {} settlements for trip {}", settlements.size(), trip.getId());
     return settlements;
   }
 

@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Set;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/trips")
 @Validated
+@Slf4j
 public class TripController {
   private final TripRepository trips;
 
@@ -19,6 +21,7 @@ public class TripController {
 
   @PostMapping
   public TripDTO create(@RequestBody @Valid TripDTO dto) {
+    log.info("Received request to create trip {}", dto.name());
     Trip t = new Trip();
     t.setName(dto.name());
     t.setStartDate(dto.startDate());
@@ -32,6 +35,7 @@ public class TripController {
 
   @GetMapping
   public List<TripDTO> all() {
+    log.info("Received request to list all trips");
     return trips.findAll().stream().map(this::toDTO).toList();
   }
 
