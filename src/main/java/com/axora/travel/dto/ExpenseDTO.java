@@ -1,4 +1,4 @@
-package com.rahul.travel.dto;
+package com.axora.travel.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

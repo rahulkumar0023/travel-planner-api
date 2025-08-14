@@ -1,4 +1,4 @@
-package com.rahul.travel;
+package com.axora.travel.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

@@ -1,8 +1,13 @@
-package com.rahul.travel;
+package com.axora.travel.controller;
 
-import com.rahul.travel.dto.GroupBalanceDTO;
-import com.rahul.travel.service.SplitService;
+import com.axora.travel.dto.GroupBalanceDTO;
+import com.axora.travel.entities.Expense;
+import com.axora.travel.repository.ExpenseRepository;
+import com.axora.travel.repository.TripRepository;
+import com.axora.travel.service.SplitService;
 import java.util.List;
+
+import com.axora.travel.entities.Trip;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;

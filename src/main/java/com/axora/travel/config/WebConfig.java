@@ -1,4 +1,4 @@
-package com.rahul.travel;
+package com.axora.travel.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

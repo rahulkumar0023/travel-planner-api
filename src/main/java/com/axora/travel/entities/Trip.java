@@ -1,4 +1,4 @@
-package com.rahul.travel;
+package com.axora.travel.entities;
 
 import jakarta.persistence.*;
 import java.time.Instant;
@@ -13,13 +13,11 @@ public class Trip {
   @GeneratedValue(strategy = GenerationType.UUID)
   private String id;
 
-  private String name;
-
-  private LocalDate startDate;
-  private LocalDate endDate;
-
-  private String currency;
-  private Double initialBudget;
+    private String name;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private String currency;
+    private Double initialBudget;
 
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(name = "trip_participants", joinColumns = @JoinColumn(name = "trip_id"))

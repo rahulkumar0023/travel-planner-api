@@ -1,4 +1,4 @@
-package com.rahul.travel;
+package com.axora.travel.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

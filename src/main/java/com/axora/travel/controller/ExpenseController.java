@@ -1,6 +1,8 @@
-package com.rahul.travel;
+package com.axora.travel.controller;
 
-import com.rahul.travel.dto.ExpenseDTO;
+import com.axora.travel.dto.ExpenseDTO;
+import com.axora.travel.entities.Expense;
+import com.axora.travel.repository.ExpenseRepository;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Set;

@@ -1,4 +1,4 @@
-package com.rahul.travel.service;
+package com.axora.travel.service;
 
 import org.springframework.stereotype.Service;
 

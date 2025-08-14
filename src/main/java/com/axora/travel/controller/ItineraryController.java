@@ -1,4 +1,4 @@
-package com.rahul.travel;
+package com.axora.travel.controller;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -15,6 +15,7 @@ public class ItineraryController {
 
   @PostMapping
   public ItineraryResponse generate(@RequestBody ItineraryRequest req) {
+    // Stubbed response — replace with OpenAI API later
     log.info("Generating itinerary for {} over {} days", req.destination(), req.days());
     List<DayPlan> plan = IntStream.rangeClosed(1, Math.max(1, req.days()))
         .mapToObj(d -> new DayPlan(d, List.of(

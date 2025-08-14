@@ -1,10 +1,11 @@
-package com.rahul.travel.service;
+package com.axora.travel.service;
 
-import com.rahul.travel.Expense;
-import com.rahul.travel.Trip;
-import com.rahul.travel.dto.GroupBalanceDTO;
+import com.axora.travel.dto.GroupBalanceDTO;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.axora.travel.entities.Expense;
+import com.axora.travel.entities.Trip;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 

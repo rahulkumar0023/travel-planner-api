@@ -1,4 +1,4 @@
-package com.rahul.travel;
+package com.axora.travel.entities;
 
 import jakarta.persistence.*;
 import java.time.Instant;

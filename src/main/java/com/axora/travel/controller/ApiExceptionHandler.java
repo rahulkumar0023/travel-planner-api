@@ -1,4 +1,4 @@
-package com.rahul.travel;
+package com.axora.travel.controller;
 
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
