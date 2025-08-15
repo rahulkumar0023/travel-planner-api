@@ -4,10 +4,14 @@ import com.axora.travel.dto.ExpenseDTO;
 import com.axora.travel.entities.Expense;
 import com.axora.travel.repository.ExpenseRepository;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/expenses")
@@ -27,9 +31,10 @@ public class ExpenseController {
     e.setTitle(dto.title());
     e.setAmount(dto.amount());
     e.setCategory(dto.category());
-    e.setDate(dto.date());
+    e.setDate(dto.date() == null ? null : dto.date().toInstant(ZoneOffset.UTC));
     e.setPaidBy(dto.paidBy());
-    e.setSharedWith(dto.sharedWith() == null ? Set.of() : dto.sharedWith());
+    e.setSharedWith(
+        dto.sharedWith() == null ? List.of() : new ArrayList<>(dto.sharedWith()));
     e = expenses.save(e);
     return toDTO(e);
   }
@@ -41,8 +46,15 @@ public class ExpenseController {
   }
 
   private ExpenseDTO toDTO(Expense e) {
-    return new ExpenseDTO(e.getId(), e.getTripId(), e.getTitle(), e.getAmount(),
-        e.getCategory(), e.getDate(), e.getPaidBy(), e.getSharedWith());
+    return new ExpenseDTO(
+        e.getId(),
+        e.getTripId(),
+        e.getTitle(),
+        e.getAmount(),
+        e.getCategory(),
+        e.getDate() == null ? null : LocalDateTime.ofInstant(e.getDate(), ZoneOffset.UTC),
+        e.getPaidBy(),
+        e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()));
   }
 }
 
