@@ -10,7 +10,7 @@ public record ExpenseDTO(
     String id,
     @NotBlank String tripId,
     String title,
-    @NotNull @Positive Double amount,
+    @NotNull java.math.BigDecimal amount,  // ← BigDecimal
     String category,
     LocalDateTime date,
     @NotBlank String paidBy,

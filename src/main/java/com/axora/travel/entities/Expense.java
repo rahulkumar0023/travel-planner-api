@@ -1,124 +1,38 @@
 package com.axora.travel.entities;
 
 import jakarta.persistence.*;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
 
-@Entity
-@Table(name = "expenses")
+// Expense.java
+@Getter
+@Setter
+@Entity @Table(name = "expenses")
 public class Expense {
-  @Id
-  @GeneratedValue(strategy = GenerationType.UUID)
-  private String id;
+  @Id private String id;
 
-  @Column(nullable = false)
+  @Column(name = "trip_id", nullable = false)
   private String tripId;
 
   private String title;
 
-  @Column(nullable = false)
-  private Double amount;
+  // money → BigDecimal + precision/scale to match numeric(12,2)
+  @Column(nullable = false, precision = 12, scale = 2)
+  private java.math.BigDecimal amount;
 
   private String category;
-  private LocalDateTime date;
 
+  @Column(name = "date")
+  private java.time.Instant date; // or OffsetDateTime if you prefer
+
+  @Column(name = "paid_by")
   private String paidBy;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(name = "expense_shared_with", joinColumns = @JoinColumn(name = "expense_id"))
-  @Column(name = "participant")
-  private Set<String> sharedWith = new HashSet<>();
+  @Column(name = "created_at")
+  private java.time.Instant createdAt = java.time.Instant.now();
 
-  private Instant createdAt;
-  private Instant updatedAt;
+  @Column(name = "updated_at")
+  private java.time.Instant updatedAt = java.time.Instant.now();
 
-  @PrePersist
-  void onCreate() {
-    createdAt = updatedAt = Instant.now();
-    if (date == null) {
-      date = LocalDateTime.now();
-    }
-  }
-
-  @PreUpdate
-  void onUpdate() {
-    updatedAt = Instant.now();
-  }
-
-  public Expense() {}
-
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getTripId() {
-    return tripId;
-  }
-
-  public void setTripId(String tripId) {
-    this.tripId = tripId;
-  }
-
-  public String getTitle() {
-    return title;
-  }
-
-  public void setTitle(String title) {
-    this.title = title;
-  }
-
-  public Double getAmount() {
-    return amount;
-  }
-
-  public void setAmount(Double amount) {
-    this.amount = amount;
-  }
-
-  public String getCategory() {
-    return category;
-  }
-
-  public void setCategory(String category) {
-    this.category = category;
-  }
-
-  public LocalDateTime getDate() {
-    return date;
-  }
-
-  public void setDate(LocalDateTime date) {
-    this.date = date;
-  }
-
-  public String getPaidBy() {
-    return paidBy;
-  }
-
-  public void setPaidBy(String paidBy) {
-    this.paidBy = paidBy;
-  }
-
-  public Set<String> getSharedWith() {
-    return sharedWith;
-  }
-
-  public void setSharedWith(Set<String> sharedWith) {
-    this.sharedWith = sharedWith;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
-  }
+  // getters/setters...
 }
-
