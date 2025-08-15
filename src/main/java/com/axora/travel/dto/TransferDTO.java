@@ -1,4 +1,6 @@
 package com.axora.travel.dto;
 
-public record TransferDTO(String from, String to, double amount) {}
+import java.math.BigDecimal;
+
+public record TransferDTO(String from, String to, BigDecimal amount) {}
 
