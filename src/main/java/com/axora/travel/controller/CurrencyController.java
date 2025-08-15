@@ -19,7 +19,7 @@ public class CurrencyController {
       @RequestParam String from,
       @RequestParam String to,
       @RequestParam double amount) {
-    log.info("/currency/convert {} {} -> {}", amount, from, to);
+    log.info("Received request to convert {} from {} to {}", amount, from, to);
     try {
       double out = service.convert(from, to, amount);
       return ResponseEntity.ok(Map.of(
@@ -27,12 +27,12 @@ public class CurrencyController {
           "to", to.toUpperCase(),
           "amount", out));
     } catch (IllegalArgumentException e) {
-      log.warn("Bad convert params: {}", e.getMessage());
+      log.warn("Bad params: {}", e.getMessage());
       return ResponseEntity.badRequest().body(Map.of(
           "error", "invalid_currency_or_params",
           "message", e.getMessage()));
     } catch (Exception e) {
-      log.error("Convert failed", e);
+      log.error("Provider failed", e);
       return ResponseEntity.status(502).body(Map.of(
           "error", "upstream_failed",
           "message", "Currency provider error"));
