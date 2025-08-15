@@ -5,6 +5,8 @@ import com.axora.travel.entities.Expense;
 import com.axora.travel.repository.ExpenseRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 
 @Service
@@ -17,41 +19,46 @@ public class BalanceService {
 
   public List<TransferDTO> compute(String tripId) {
     List<Expense> expenses = repo.findByTripIdOrderByDateDesc(tripId);
-    Map<String, Double> net = new HashMap<>();
+    Map<String, BigDecimal> net = new HashMap<>();
 
     for (Expense e : expenses) {
       var participants = e.getSharedWith();
       if (participants == null || participants.isEmpty()) continue;
-      double perHead = e.getAmount() / participants.size();
 
-      net.merge(e.getPaidBy(), e.getAmount(), Double::sum);
+      BigDecimal amount = e.getAmount();
+      BigDecimal perHead =
+          amount.divide(BigDecimal.valueOf(participants.size()), 2, RoundingMode.HALF_UP);
+
+      net.merge(e.getPaidBy(), amount, BigDecimal::add);
       for (String p : participants) {
-        net.merge(p, -perHead, Double::sum);
+        net.merge(p, perHead.negate(), BigDecimal::add);
       }
     }
 
-    PriorityQueue<Map.Entry<String, Double>> debtors =
-        new PriorityQueue<>(Comparator.comparingDouble(Map.Entry::getValue));
-    PriorityQueue<Map.Entry<String, Double>> creditors =
-        new PriorityQueue<>((a, b) -> Double.compare(b.getValue(), a.getValue()));
+    PriorityQueue<Map.Entry<String, BigDecimal>> debtors =
+        new PriorityQueue<>(Map.Entry.comparingByValue());
+    PriorityQueue<Map.Entry<String, BigDecimal>> creditors =
+        new PriorityQueue<>((a, b) -> b.getValue().compareTo(a.getValue()));
 
+    BigDecimal threshold = new BigDecimal("0.01");
     for (var entry : net.entrySet()) {
-      double v = Math.round(entry.getValue() * 100.0) / 100.0;
-      if (Math.abs(v) < 0.01) continue;
+      BigDecimal v = entry.getValue().setScale(2, RoundingMode.HALF_UP);
+      if (v.abs().compareTo(threshold) < 0) continue;
       var e = Map.entry(entry.getKey(), v);
-      if (v < 0) debtors.add(e); else creditors.add(e);
+      if (v.signum() < 0) debtors.add(e); else creditors.add(e);
     }
 
     List<TransferDTO> transfers = new ArrayList<>();
     while (!debtors.isEmpty() && !creditors.isEmpty()) {
       var d = debtors.poll();
       var c = creditors.poll();
-      double pay = Math.min(-d.getValue(), c.getValue());
-      transfers.add(new TransferDTO(d.getKey(), c.getKey(), Math.round(pay * 100.0) / 100.0));
-      double dRemain = d.getValue() + pay;
-      double cRemain = c.getValue() - pay;
-      if (dRemain < -0.01) debtors.add(Map.entry(d.getKey(), dRemain));
-      if (cRemain > 0.01) creditors.add(Map.entry(c.getKey(), cRemain));
+      BigDecimal pay = d.getValue().negate().min(c.getValue());
+      pay = pay.setScale(2, RoundingMode.HALF_UP);
+      transfers.add(new TransferDTO(d.getKey(), c.getKey(), pay));
+      BigDecimal dRemain = d.getValue().add(pay).setScale(2, RoundingMode.HALF_UP);
+      BigDecimal cRemain = c.getValue().subtract(pay).setScale(2, RoundingMode.HALF_UP);
+      if (dRemain.compareTo(threshold.negate()) < 0) debtors.add(Map.entry(d.getKey(), dRemain));
+      if (cRemain.compareTo(threshold) > 0) creditors.add(Map.entry(c.getKey(), cRemain));
     }
     return transfers;
   }
