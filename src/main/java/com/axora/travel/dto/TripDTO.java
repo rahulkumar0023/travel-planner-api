@@ -1,15 +1,16 @@
+// src/main/java/com/axora/travel/dto/TripDTO.java
 package com.axora.travel.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Set;
 
 public record TripDTO(
-    String id,
-    @NotBlank String name,
-    LocalDate startDate,
-    LocalDate endDate,
-    Double initialBudget,
-    String currency,
-    Set<String> participants) {}
-
+        String id,
+        String name,
+        LocalDate startDate,
+        LocalDate endDate,
+        String currency,
+        BigDecimal initialBudget,     // ← BigDecimal to match DB/entity
+        Set<String> participants
+) {}

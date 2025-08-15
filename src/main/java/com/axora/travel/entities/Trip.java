@@ -1,106 +1,53 @@
 package com.axora.travel.entities;
 
-import jakarta.persistence.*;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
+ import jakarta.persistence.*;
+ import lombok.Getter;
+ import lombok.Setter;
+import java.math.BigDecimal;
+ import java.time.Instant;
+ import java.time.LocalDate;
+ import java.util.HashSet;
+ import java.util.Set;
 
 @Entity
 @Table(name = "trips")
+@Getter
+@Setter
 public class Trip {
   @Id
   @GeneratedValue(strategy = GenerationType.UUID)
   private String id;
 
-    private String name;
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private String currency;
-    private Double initialBudget;
+   private String name;
+   private LocalDate startDate;
+   private LocalDate endDate;
 
-  @ElementCollection(fetch = FetchType.EAGER)
-  @CollectionTable(name = "trip_participants", joinColumns = @JoinColumn(name = "trip_id"))
-  @Column(name = "participant")
-  private Set<String> participants = new HashSet<>();
+  @Column(length = 3)                 // ISO code like "EUR"
+  private String currency;
+  @Column(name = "initial_budget", precision = 12, scale = 2)
+  private BigDecimal initialBudget;
 
-  private Instant createdAt;
-  private Instant updatedAt;
+   @ElementCollection(fetch = FetchType.EAGER)
+   @CollectionTable(name = "trip_participants", joinColumns = @JoinColumn(name = "trip_id"))
+   @Column(name = "participant")
+   private Set<String> participants = new HashSet<>();
 
-  @PrePersist
-  void onCreate() {
-    createdAt = updatedAt = Instant.now();
-  }
+   private Instant createdAt;
+   private Instant updatedAt;
 
-  @PreUpdate
-  void onUpdate() {
-    updatedAt = Instant.now();
-  }
+   public String getCurrency() {
+     return currency;
+   }
 
-  public Trip() {}
+   public void setCurrency(String currency) {
+     this.currency = currency;
+   }
 
-  public String getId() {
-    return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public LocalDate getStartDate() {
-    return startDate;
-  }
-
-  public void setStartDate(LocalDate startDate) {
-    this.startDate = startDate;
-  }
-
-  public LocalDate getEndDate() {
-    return endDate;
-  }
-
-  public void setEndDate(LocalDate endDate) {
-    this.endDate = endDate;
-  }
-
-  public String getCurrency() {
-    return currency;
-  }
-
-  public void setCurrency(String currency) {
-    this.currency = currency;
-  }
-
-  public Double getInitialBudget() {
+  public BigDecimal getInitialBudget() {
     return initialBudget;
   }
-
-  public void setInitialBudget(Double initialBudget) {
+  public void setInitialBudget(BigDecimal initialBudget) {
     this.initialBudget = initialBudget;
-  }
-
-  public Set<String> getParticipants() {
-    return participants;
-  }
-
-  public void setParticipants(Set<String> participants) {
-    this.participants = participants;
-  }
-
-  public Instant getCreatedAt() {
-    return createdAt;
-  }
-
-  public Instant getUpdatedAt() {
-    return updatedAt;
   }
 }
 
