@@ -16,9 +16,8 @@ public class Budget {
   @Id private String id;
   @Enumerated(EnumType.STRING) private BudgetKind kind;
   private String currency;
-  private BigDecimal amount;
-  private Integer year;
-  private Integer month;
+  @Column(precision = 12, scale = 2) private BigDecimal amount;
+  private Integer year; private Integer month;
   @Column(name = "trip_id") private String tripId;
   private String name;
   @Column(name = "linked_monthly_budget_id") private String linkedMonthlyBudgetId;

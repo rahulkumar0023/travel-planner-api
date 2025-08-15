@@ -18,7 +18,7 @@ public class BalanceService {
   }
 
   public List<TransferDTO> compute(String tripId) {
-    List<Expense> expenses = repo.findByTripIdOrderByDateDesc(tripId);
+    List<Expense> expenses = repo.findByTripIdOrderByDateDescCreatedAtDesc(tripId);
     Map<String, BigDecimal> net = new HashMap<>();
 
     for (Expense e : expenses) {

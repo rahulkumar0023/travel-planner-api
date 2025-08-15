@@ -11,38 +11,50 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.*;
 
 @RestController
 @RequestMapping("/expenses")
 @Slf4j
 public class ExpenseController {
-  private final ExpenseRepository expenses;
 
-  public ExpenseController(ExpenseRepository expenses) {
-    this.expenses = expenses;
-  }
+  private final ExpenseRepository repo;
+  public ExpenseController(ExpenseRepository repo) { this.repo = repo; }
+
+  // DTOs
+  public record CreateExpenseDto(
+      String tripId,
+      String title,
+      BigDecimal amount,
+      String category,
+      String paidBy,
+      Instant date,
+      Set<String> sharedWith
+  ) {}
 
   @PostMapping
-  public ExpenseDTO create(@RequestBody @Valid ExpenseDTO dto) {
-    log.info("Received request to create expense for trip {}", dto.tripId());
-    Expense e = new Expense();
+  public ResponseEntity<Expense> create(@RequestBody CreateExpenseDto dto) {
+    var e = new Expense();
+    e.setId(UUID.randomUUID().toString());
     e.setTripId(dto.tripId());
     e.setTitle(dto.title());
     e.setAmount(dto.amount());
     e.setCategory(dto.category());
-    e.setDate(dto.date() == null ? null : dto.date().toInstant(ZoneOffset.UTC));
     e.setPaidBy(dto.paidBy());
-    e.setSharedWith(
-        dto.sharedWith() == null ? List.of() : new ArrayList<>(dto.sharedWith()));
-    e = expenses.save(e);
-    return toDTO(e);
+    e.setDate(dto.date());
+    e.setSharedWith(dto.sharedWith()); // ⬅⬅ now compiles
+    return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(e));
   }
 
   @GetMapping("/{tripId}")
-  public List<ExpenseDTO> byTrip(@PathVariable String tripId) {
-    log.info("Received request to list expenses for trip {}", tripId);
-    return expenses.findByTripIdOrderByDateDesc(tripId).stream().map(this::toDTO).toList();
+  public List<Expense> byTrip(@PathVariable String tripId) {
+    return repo.findByTripIdOrderByDateDescCreatedAtDesc(tripId);
   }
 
   private ExpenseDTO toDTO(Expense e) {

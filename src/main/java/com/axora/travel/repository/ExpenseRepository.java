@@ -6,5 +6,5 @@ import com.axora.travel.entities.Expense;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ExpenseRepository extends JpaRepository<Expense, String> {
-  List<Expense> findByTripIdOrderByDateDesc(String tripId);
+  List<Expense> findByTripIdOrderByDateDescCreatedAtDesc(String tripId);
 }
