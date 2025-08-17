@@ -1,0 +1,15 @@
+# .dockerignore start
+.git
+.github
+.idea
+.vscode
+**/*.iml
+node_modules/
+.target/
+target/
+build/
+.gradle/
+.mvn/wrapper/maven-wrapper.jar
+.DS_Store
+*.log
+# .dockerignore end

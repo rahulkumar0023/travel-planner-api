@@ -1,0 +1,12 @@
+# render.yaml start
+services:
+  - type: web
+    name: travel-planner-api
+    env: docker
+    autoDeploy: false           # we deploy via GH Actions + deploy hook
+    image: rahulkumartonk/travel-planner-api:latest
+    plan: starter               # or free / other plan
+    envVars:
+      - key: JAVA_OPTS
+        value: "-XX:MaxRAMPercentage=75.0 -Dfile.encoding=UTF-8"
+# render.yaml end
