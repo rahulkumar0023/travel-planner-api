@@ -1,19 +1,17 @@
-# Dockerfile start
+# Dockerfile (Maven base) start
 # syntax=docker/dockerfile:1.7
 
 ########################################
 # Stage 1 — build with cached Maven repo
 ########################################
-FROM eclipse-temurin:21-jdk AS build
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 
-# Enable BuildKit cache for Maven
-# (CI will supply the cache; local builds also benefit)
 WORKDIR /app
 
 # 1) Copy only pom.xml first to leverage layer cache for deps
 COPY pom.xml ./
 
-# Pre-fetch dependencies using cache mount
+# Pre-fetch dependencies using BuildKit cache for ~/.m2
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B -q -DskipTests dependency:go-offline
 
@@ -42,4 +40,4 @@ COPY --from=build /app/app.jar ./app.jar
 EXPOSE 8080
 # Tell Spring to use Render-provided $PORT
 ENTRYPOINT ["sh", "-lc", "exec java $JAVA_OPTS -Dserver.port=${PORT} -jar app.jar"]
-# Dockerfile end
+# Dockerfile (Maven base) end
