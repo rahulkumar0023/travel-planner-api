@@ -3,6 +3,7 @@ package com.axora.travel.controller;
 import com.axora.travel.entities.Budget;
 import com.axora.travel.entities.BudgetKind;
 import com.axora.travel.repository.BudgetRepository;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,8 +21,19 @@ public class BudgetController {
   @GetMapping
   public List<Budget> all() { return repo.findAll(); }
 
-  record CreateReq(String kind, String currency, BigDecimal amount,
-                   Integer year, Integer month, String tripId, String name) {}
+  // annotate the record
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static record CreateReq(
+          String id,           // optional; path {id} is authoritative
+          String kind,
+          String currency,
+          BigDecimal amount,
+          Integer year,
+          Integer month,
+          String tripId,
+          String name,
+          String linkedMonthlyBudgetId
+  ) {}
 
   // Accept POST /budgets, /budgets/monthly, /budgets/trip
   @PostMapping({ "", "/", "/monthly", "/trip" })
@@ -43,10 +55,8 @@ public class BudgetController {
     return repo.save(trip);
   }
 
-  // --- update() start ---
   @PutMapping("/{id}")
-  @PatchMapping("/{id}")
-  public ResponseEntity<Budget> update(@PathVariable String id, @RequestBody CreateReq req) {
+  public ResponseEntity<Budget> updatePut(@PathVariable String id, @RequestBody CreateReq req) {
     var b = repo.findById(id).orElseThrow();
     if (req.kind() != null) b.setKind(BudgetKind.valueOf(req.kind()));
     if (req.currency() != null) b.setCurrency(req.currency());
@@ -55,11 +65,36 @@ public class BudgetController {
     if (req.month() != null) b.setMonth(req.month());
     if (req.tripId() != null) b.setTripId(req.tripId());
     if (req.name() != null) b.setName(req.name());
+    if (req.linkedMonthlyBudgetId() != null) b.setLinkedMonthlyBudgetId(req.linkedMonthlyBudgetId());
     return ResponseEntity.ok(repo.save(b));
   }
-// --- update() end ---
 
-  // --- delete() start ---
+  @PatchMapping("/{id}")
+  public ResponseEntity<Budget> updatePatch(@PathVariable String id, @RequestBody CreateReq req) {
+    return updatePut(id, req);
+  }
+
+//  // --- update() start ---
+//  @PutMapping("/{id}")
+//  @PatchMapping("/{id}")
+//  public ResponseEntity<Budget> update(@PathVariable String id, @RequestBody CreateReq req) {
+//    var b = repo.findById(id).orElseThrow();
+//    if (req.kind() != null) b.setKind(BudgetKind.valueOf(req.kind()));
+//    if (req.currency() != null) b.setCurrency(req.currency());
+//    if (req.amount() != null) b.setAmount(req.amount());
+//    if (req.year() != null) b.setYear(req.year());
+//    if (req.month() != null) b.setMonth(req.month());
+//    if (req.tripId() != null) b.setTripId(req.tripId());
+//    if (req.name() != null) b.setName(req.name());
+//    return ResponseEntity.ok(repo.save(b));
+//  }
+//// --- update() end ---
+
+@PostMapping("/{id}")
+public ResponseEntity<Budget> updatePost(@PathVariable String id, @RequestBody CreateReq req) {
+  return updatePut(id, req);
+}
+
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable String id) {
     if (!repo.existsById(id)) return ResponseEntity.notFound().build();
@@ -67,19 +102,15 @@ public class BudgetController {
     return ResponseEntity.noContent().build();
   }
 
-  // Some clients POST to /budgets/{id}/delete; support that too
   @PostMapping("/{id}/delete")
   public ResponseEntity<Void> deletePost(@PathVariable String id) {
     return delete(id);
   }
-// --- delete() end ---
 
-  // --- unlink() start ---
   @PostMapping("/{tripBudgetId}/unlink")
   public ResponseEntity<Budget> unlink(@PathVariable String tripBudgetId) {
     var t = repo.findById(tripBudgetId).orElseThrow();
     t.setLinkedMonthlyBudgetId(null);
     return ResponseEntity.ok(repo.save(t));
   }
-// --- unlink() end ---
 }

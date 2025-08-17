@@ -15,27 +15,24 @@ class BudgetAliases {
         return real.create(req);
     }
 
-    // --- BudgetAliases extra routes start ---
     @PutMapping("/{id}")
+    public ResponseEntity<Budget> updateAliasPut(@PathVariable String id,
+                                                 @RequestBody BudgetController.CreateReq req) { return real.updatePut(id, req); }
+
     @PatchMapping("/{id}")
-    public ResponseEntity<Budget> updateAlias(@PathVariable String id,
-                                              @RequestBody BudgetController.CreateReq req) {
-        return real.update(id, req);
-    }
+    public ResponseEntity<Budget> updateAliasPatch(@PathVariable String id,
+                                                   @RequestBody BudgetController.CreateReq req) { return real.updatePut(id, req); }
+
+    @PostMapping("/{id}")
+    public ResponseEntity<Budget> updateAliasPost(@PathVariable String id,
+                                                  @RequestBody BudgetController.CreateReq req) { return real.updatePut(id, req); }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAlias(@PathVariable String id) {
-        return real.delete(id);
-    }
+    public ResponseEntity<Void> deleteAlias(@PathVariable String id) { return real.delete(id); }
 
     @PostMapping("/{id}/delete")
-    public ResponseEntity<Void> deleteAliasPost(@PathVariable String id) {
-        return real.delete(id);
-    }
+    public ResponseEntity<Void> deleteAliasPost(@PathVariable String id) { return real.delete(id); }
 
     @PostMapping("/{id}/unlink")
-    public ResponseEntity<Budget> unlinkAlias(@PathVariable String id) {
-        return real.unlink(id);
-    }
-// --- BudgetAliases extra routes end ---
+    public ResponseEntity<Budget> unlinkAlias(@PathVariable String id) { return real.unlink(id); }
 }
