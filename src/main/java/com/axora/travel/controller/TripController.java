@@ -9,6 +9,8 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -42,6 +44,11 @@ public class TripController {
     t.setCurrency(dto.currency());
     t.setInitialBudget(dto.initialBudget());           // ← DTO is BigDecimal no
     t.setParticipants(dto.participants() == null ? Set.of() : dto.participants());
+    // when writing into Trip entity from DTO (CSV encode)
+    if (dto.spendCurrencies() != null) {
+      var csv = String.join(",", dto.spendCurrencies());
+      t.setSpendCurrencies(csv);
+    }
     t = trips.save(t);
     return toDTO(t);
   }
@@ -53,6 +60,9 @@ public class TripController {
   }
 
   private TripDTO toDTO(Trip t) {
+    List<String> spend = (t.getSpendCurrencies() == null || t.getSpendCurrencies().isBlank())
+            ? List.of()
+            : Arrays.stream(t.getSpendCurrencies().split(",")).map(String::trim).filter(s -> !s.isEmpty()).toList();
        return new TripDTO(                               // ← match DTO field order
                    t.getId(),
                    t.getName(),
@@ -60,7 +70,8 @@ public class TripController {
                    t.getEndDate(),
                    t.getCurrency(),
                    t.getInitialBudget(),
-                   t.getParticipants());
+                   t.getParticipants(),
+                    spend);
   }
 
   @PutMapping("/{id}")
@@ -72,6 +83,11 @@ public class TripController {
     if (dto.currency() != null) t.setCurrency(dto.currency());
     if (dto.initialBudget() != null) t.setInitialBudget(dto.initialBudget());
     if (dto.participants() != null) t.setParticipants(dto.participants());
+    // when updating Trip entity from DTO (CSV encode)
+    if (dto.spendCurrencies() != null) {
+      var csv = String.join(",", dto.spendCurrencies());
+      t.setSpendCurrencies(csv);
+    }
     t = trips.save(t);
     return toDTO(t);
   }

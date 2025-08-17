@@ -24,6 +24,9 @@ public class Trip {
 
   @Column(length = 3)                 // ISO code like "EUR"
   private String currency;
+    @Column(name = "spend_currencies")
+    private String spendCurrencies; // CSV string: "TRY,INR"
+
   @Column(name = "initial_budget", precision = 12, scale = 2)
   private BigDecimal initialBudget;
 
@@ -51,13 +54,6 @@ public class Trip {
         this.updatedAt = Instant.now();
     }
 
-   public String getCurrency() {
-     return currency;
-   }
-
-   public void setCurrency(String currency) {
-     this.currency = currency;
-   }
 
   public BigDecimal getInitialBudget() {
     return initialBudget;

@@ -3,6 +3,7 @@ package com.axora.travel.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
 public record TripDTO(
@@ -12,5 +13,6 @@ public record TripDTO(
         LocalDate endDate,
         String currency,
         BigDecimal initialBudget,     // ← BigDecimal to match DB/entity
-        Set<String> participants
+        Set<String> participants,
+        List<String> spendCurrencies // <-- add
 ) {}

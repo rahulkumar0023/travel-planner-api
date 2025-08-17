@@ -38,6 +38,11 @@ public class Expense {
   @Column(name = "updated_at")
   private Instant updatedAt;
 
+  // place with other fields
+  @Column(name = "currency", length = 3, nullable = false)
+  private String currency;
+
+
   // ⬇⬇⬇ NEW: map expense_shared_with(expense_id, participant) as a collection of Strings
   @ElementCollection(fetch = FetchType.EAGER)
   @CollectionTable(
@@ -58,36 +63,7 @@ public class Expense {
     updatedAt = Instant.now();
   }
 
-  // --- getters/setters ---
 
-  public String getId() { return id; }
-  public void setId(String id) { this.id = id; }
-
-  public String getTripId() { return tripId; }
-  public void setTripId(String tripId) { this.tripId = tripId; }
-
-  public String getTitle() { return title; }
-  public void setTitle(String title) { this.title = title; }
-
-  public BigDecimal getAmount() { return amount; }
-  public void setAmount(BigDecimal amount) { this.amount = amount; }
-
-  public String getCategory() { return category; }
-  public void setCategory(String category) { this.category = category; }
-
-  public Instant getDate() { return date; }
-  public void setDate(Instant date) { this.date = date; }
-
-  public String getPaidBy() { return paidBy; }
-  public void setPaidBy(String paidBy) { this.paidBy = paidBy; }
-
-  public Instant getCreatedAt() { return createdAt; }
-  public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
-
-  public Instant getUpdatedAt() { return updatedAt; }
-  public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
-
-  // ⬇⬇⬇ these resolve your compile errors
   public Set<String> getSharedWith() { return sharedWith; }
   public void setSharedWith(Set<String> sharedWith) {
     this.sharedWith = (sharedWith == null) ? new LinkedHashSet<>() : new LinkedHashSet<>(sharedWith);

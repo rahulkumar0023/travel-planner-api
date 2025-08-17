@@ -3,6 +3,7 @@ package com.axora.travel.controller;
 import com.axora.travel.dto.ExpenseDTO;
 import com.axora.travel.entities.Expense;
 import com.axora.travel.repository.ExpenseRepository;
+import com.axora.travel.repository.TripRepository;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -24,8 +25,12 @@ import java.util.*;
 @Slf4j
 public class ExpenseController {
 
-  private final ExpenseRepository repo;
-  public ExpenseController(ExpenseRepository repo) { this.repo = repo; }
+  private final ExpenseRepository expenses;
+  private final TripRepository trips;
+
+  public ExpenseController(ExpenseRepository expenses, TripRepository trips) { this.expenses = expenses;
+      this.trips = trips;
+  }
 
   // DTOs
   public record CreateExpenseDto(
@@ -35,7 +40,8 @@ public class ExpenseController {
       String category,
       String paidBy,
       Instant date,
-      Set<String> sharedWith
+      Set<String> sharedWith,
+      String currency
   ) {}
 
   @PostMapping
@@ -49,12 +55,19 @@ public class ExpenseController {
     e.setPaidBy(dto.paidBy());
     e.setDate(dto.date());
     e.setSharedWith(dto.sharedWith()); // ⬅⬅ now compiles
-    return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(e));
+    // In your POST /expenses create method, after building 'e':
+    if (dto.currency() != null && !dto.currency().isBlank()) {
+      e.setCurrency(dto.currency().toUpperCase());
+    } else {
+      var trip = trips.findById(dto.tripId()).orElseThrow();
+      e.setCurrency(trip.getCurrency()); // default to trip base currency
+    }
+    return ResponseEntity.status(HttpStatus.CREATED).body(expenses.save(e));
   }
 
   @GetMapping("/{tripId}")
   public List<Expense> byTrip(@PathVariable String tripId) {
-    return repo.findByTripIdOrderByDateDescCreatedAtDesc(tripId);
+    return expenses.findByTripIdOrderByDateDescCreatedAtDesc(tripId);
   }
 
   private ExpenseDTO toDTO(Expense e) {
@@ -70,7 +83,7 @@ public class ExpenseController {
   }
   @PutMapping("/{id}")
   public ResponseEntity<Expense> updateExpensePut(@PathVariable String id, @RequestBody CreateExpenseDto dto) {
-    var e = repo.findById(id).orElseThrow();
+    var e = expenses.findById(id).orElseThrow();
     if (dto.tripId() != null) e.setTripId(dto.tripId());
     if (dto.title() != null) e.setTitle(dto.title());
     if (dto.amount() != null) e.setAmount(dto.amount());
@@ -78,7 +91,11 @@ public class ExpenseController {
     if (dto.paidBy() != null) e.setPaidBy(dto.paidBy());
     if (dto.date() != null) e.setDate(dto.date());
     if (dto.sharedWith() != null) e.setSharedWith(dto.sharedWith());
-    return ResponseEntity.ok(repo.save(e));
+    // In update (PUT/PATCH):
+    if (dto.currency() != null && !dto.currency().isBlank()) {
+      e.setCurrency(dto.currency().toUpperCase());
+    }
+    return ResponseEntity.ok(expenses.save(e));
   }
 
   @PatchMapping("/{id}")
@@ -88,8 +105,8 @@ public class ExpenseController {
 
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> deleteExpense(@PathVariable String id) {
-    if (!repo.existsById(id)) return ResponseEntity.notFound().build();
-    repo.deleteById(id);
+    if (!expenses.existsById(id)) return ResponseEntity.notFound().build();
+    expenses.deleteById(id);
     return ResponseEntity.noContent().build();
   }
 }
