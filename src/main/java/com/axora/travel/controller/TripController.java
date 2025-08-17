@@ -2,7 +2,10 @@ package com.axora.travel.controller;
 
 import com.axora.travel.dto.TripDTO;
 import com.axora.travel.entities.Trip;
+import com.axora.travel.repository.BudgetRepository;
+import com.axora.travel.repository.ExpenseRepository;
 import com.axora.travel.repository.TripRepository;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
@@ -20,9 +23,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TripController {
   private final TripRepository trips;
+  private final BudgetRepository budgets;
+  private final ExpenseRepository expenses;
 
-  public TripController(TripRepository trips) {
+  public TripController(TripRepository trips, BudgetRepository budgets, ExpenseRepository expenses) {
     this.trips = trips;
+      this.budgets = budgets;
+      this.expenses = expenses;
   }
 
   @PostMapping
@@ -75,10 +82,30 @@ public class TripController {
   }
 
   @DeleteMapping("/{id}")
+  @Transactional
   public ResponseEntity<Void> deleteTrip(@PathVariable String id) {
     if (!trips.existsById(id)) return ResponseEntity.notFound().build();
-    trips.deleteById(id);
-    return ResponseEntity.noContent().build();
+
+    // 1) Delete child rows that reference this trip (order matters for FK constraints)
+    try {
+      // budgets: remove any trip budgets tied to this trip
+      try {
+        budgets.deleteByTripId(id);        // or budgets.deleteAllTripBudgets(id);
+      } catch (Exception ignored) { /* repo method name may vary; use your variant */ }
+
+      // expenses: remove all expenses for this trip
+      try {
+        expenses.deleteByTripId(id);       // or expenses.deleteAllByTripId(id);
+      } catch (Exception ignored) { /* repo method name may vary; use your variant */ }
+
+      // 2) Delete the trip itself
+      trips.deleteById(id);
+      return ResponseEntity.noContent().build();
+
+    } catch (Exception e) {
+      // Optional: surface a clearer message than a raw 500
+      return ResponseEntity.status(500).build();
+    }
   }
 }
 

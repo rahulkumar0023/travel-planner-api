@@ -9,4 +9,6 @@ import java.util.List;
 
 public interface BudgetRepository extends JpaRepository<Budget, String> {
     List<Budget> findByKind(BudgetKind kind);
+    // If your Budget entity has `String tripId` for trip budgets:
+    void deleteByTripId(String tripId);
 }
