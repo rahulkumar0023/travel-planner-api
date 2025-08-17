@@ -68,5 +68,29 @@ public class ExpenseController {
         e.getPaidBy(),
         e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()));
   }
+  @PutMapping("/{id}")
+  public ResponseEntity<Expense> updateExpensePut(@PathVariable String id, @RequestBody CreateExpenseDto dto) {
+    var e = repo.findById(id).orElseThrow();
+    if (dto.tripId() != null) e.setTripId(dto.tripId());
+    if (dto.title() != null) e.setTitle(dto.title());
+    if (dto.amount() != null) e.setAmount(dto.amount());
+    if (dto.category() != null) e.setCategory(dto.category());
+    if (dto.paidBy() != null) e.setPaidBy(dto.paidBy());
+    if (dto.date() != null) e.setDate(dto.date());
+    if (dto.sharedWith() != null) e.setSharedWith(dto.sharedWith());
+    return ResponseEntity.ok(repo.save(e));
+  }
+
+  @PatchMapping("/{id}")
+  public ResponseEntity<Expense> updateExpensePatch(@PathVariable String id, @RequestBody CreateExpenseDto dto) {
+    return updateExpensePut(id, dto);
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteExpense(@PathVariable String id) {
+    if (!repo.existsById(id)) return ResponseEntity.notFound().build();
+    repo.deleteById(id);
+    return ResponseEntity.noContent().build();
+  }
 }
 

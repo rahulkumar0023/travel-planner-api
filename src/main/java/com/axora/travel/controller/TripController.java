@@ -8,6 +8,8 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
+
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +54,31 @@ public class TripController {
                    t.getCurrency(),
                    t.getInitialBudget(),
                    t.getParticipants());
+  }
+
+  @PutMapping("/{id}")
+  public TripDTO updateTripPut(@PathVariable String id, @RequestBody TripDTO dto) {
+    var t = trips.findById(id).orElseThrow();
+    if (dto.name() != null) t.setName(dto.name());
+    if (dto.startDate() != null) t.setStartDate(dto.startDate());
+    if (dto.endDate() != null) t.setEndDate(dto.endDate());
+    if (dto.currency() != null) t.setCurrency(dto.currency());
+    if (dto.initialBudget() != null) t.setInitialBudget(dto.initialBudget());
+    if (dto.participants() != null) t.setParticipants(dto.participants());
+    t = trips.save(t);
+    return toDTO(t);
+  }
+
+  @PatchMapping("/{id}")
+  public TripDTO updateTripPatch(@PathVariable String id, @RequestBody TripDTO dto) {
+    return updateTripPut(id, dto);
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> deleteTrip(@PathVariable String id) {
+    if (!trips.existsById(id)) return ResponseEntity.notFound().build();
+    trips.deleteById(id);
+    return ResponseEntity.noContent().build();
   }
 }
 
