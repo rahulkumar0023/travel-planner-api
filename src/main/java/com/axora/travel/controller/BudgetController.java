@@ -42,4 +42,44 @@ public class BudgetController {
     trip.setLinkedMonthlyBudgetId(body.monthlyBudgetId());
     return repo.save(trip);
   }
+
+  // --- update() start ---
+  @PutMapping("/{id}")
+  @PatchMapping("/{id}")
+  public ResponseEntity<Budget> update(@PathVariable String id, @RequestBody CreateReq req) {
+    var b = repo.findById(id).orElseThrow();
+    if (req.kind() != null) b.setKind(BudgetKind.valueOf(req.kind()));
+    if (req.currency() != null) b.setCurrency(req.currency());
+    if (req.amount() != null) b.setAmount(req.amount());
+    if (req.year() != null) b.setYear(req.year());
+    if (req.month() != null) b.setMonth(req.month());
+    if (req.tripId() != null) b.setTripId(req.tripId());
+    if (req.name() != null) b.setName(req.name());
+    return ResponseEntity.ok(repo.save(b));
+  }
+// --- update() end ---
+
+  // --- delete() start ---
+  @DeleteMapping("/{id}")
+  public ResponseEntity<Void> delete(@PathVariable String id) {
+    if (!repo.existsById(id)) return ResponseEntity.notFound().build();
+    repo.deleteById(id);
+    return ResponseEntity.noContent().build();
+  }
+
+  // Some clients POST to /budgets/{id}/delete; support that too
+  @PostMapping("/{id}/delete")
+  public ResponseEntity<Void> deletePost(@PathVariable String id) {
+    return delete(id);
+  }
+// --- delete() end ---
+
+  // --- unlink() start ---
+  @PostMapping("/{tripBudgetId}/unlink")
+  public ResponseEntity<Budget> unlink(@PathVariable String tripBudgetId) {
+    var t = repo.findById(tripBudgetId).orElseThrow();
+    t.setLinkedMonthlyBudgetId(null);
+    return ResponseEntity.ok(repo.save(t));
+  }
+// --- unlink() end ---
 }
