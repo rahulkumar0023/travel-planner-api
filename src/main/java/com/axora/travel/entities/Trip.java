@@ -32,8 +32,24 @@ public class Trip {
    @Column(name = "participant")
    private Set<String> participants = new HashSet<>();
 
-   private Instant createdAt;
-   private Instant updatedAt;
+    // Map to snake_case columns and require values
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @PrePersist
+    void prePersist() {
+        var now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        this.updatedAt = Instant.now();
+    }
 
    public String getCurrency() {
      return currency;
