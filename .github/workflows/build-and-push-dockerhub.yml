@@ -3,7 +3,9 @@ name: Build & Push API (Docker Hub)
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
+      - codex/add-post-and-get-endpoints-for-expenses
 
 permissions:
   contents: read
