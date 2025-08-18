@@ -5,22 +5,22 @@ import com.axora.travel.dto.ExpenseDTO;
 import com.axora.travel.entities.Expense;
 import com.axora.travel.repository.ExpenseRepository;
 import com.axora.travel.repository.TripRepository;
+
 import com.axora.travel.service.ExpenseService;
 import jakarta.validation.Valid;
+
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.*;
 
 @RestController
 @RequestMapping("/expenses")
@@ -28,6 +28,7 @@ import java.util.*;
 public class ExpenseController {
 
   private final ExpenseRepository expenses;
+
   private final TripRepository trips;
   private final ExpenseService expenseService;
 
@@ -48,29 +49,6 @@ public class ExpenseController {
       String currency
   ) {}
 
-//  // ===== LEGACY create mapping change start =====
-//  @Deprecated
-//  @PostMapping("/legacy") // was: @PostMapping
-//  public ResponseEntity<Expense> create(@RequestBody CreateExpenseDto dto) {
-//    var e = new Expense();
-//    e.setId(UUID.randomUUID().toString());
-//    e.setTripId(dto.tripId());
-//    e.setTitle(dto.title());
-//    e.setAmount(dto.amount());
-//    e.setCategory(dto.category());
-//    e.setPaidBy(dto.paidBy());
-//    e.setDate(dto.date());
-//    e.setSharedWith(dto.sharedWith()); // ⬅⬅ now compiles
-//    // In your POST /expenses create method, after building 'e':
-//    if (dto.currency() != null && !dto.currency().isBlank()) {
-//      e.setCurrency(dto.currency().toUpperCase());
-//    } else {
-//      var trip = trips.findById(dto.tripId()).orElseThrow();
-//      e.setCurrency(trip.getCurrency()); // default to trip base currency
-//    }
-//    return ResponseEntity.status(HttpStatus.CREATED).body(expenses.save(e));
-//  }
-
   @GetMapping("/{tripId}")
   public List<Expense> byTrip(@PathVariable String tripId) {
     return expenses.findByTripIdOrderByDateDescCreatedAtDesc(tripId);
@@ -87,6 +65,8 @@ public class ExpenseController {
         e.getPaidBy(),
         e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()));
   }
+
+
   @PutMapping("/{id}")
   public ResponseEntity<Expense> updateExpensePut(
       @PathVariable String id, @RequestBody ExpenseCreateRequest dto) {
