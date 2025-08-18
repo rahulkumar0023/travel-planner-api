@@ -1,5 +1,6 @@
 package com.axora.travel.controller;
 
+import com.axora.travel.dto.ExpenseCreateRequest;
 import com.axora.travel.dto.ExpenseDTO;
 import com.axora.travel.entities.Expense;
 import com.axora.travel.repository.ExpenseRepository;
@@ -109,5 +110,22 @@ public class ExpenseController {
     expenses.deleteById(id);
     return ResponseEntity.noContent().build();
   }
-}
 
+  // ===== Expenses Controller: create & list additions start =====
+  @PostMapping
+  public ResponseEntity<ExpenseDTO> createExpense(
+      @RequestBody @Valid ExpenseCreateRequest req) {
+    ExpenseDTO created = expenseService.create(req);
+    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+  }
+
+  @GetMapping
+  public ResponseEntity<List<ExpenseDTO>> listExpenses(
+      @RequestParam(required = false) String tripId) {
+    if (tripId != null) {
+      return ResponseEntity.ok(expenseService.findByTripId(tripId));
+    }
+    return ResponseEntity.ok(expenseService.findAll());
+  }
+  // ===== Expenses Controller: create & list additions end =====
+}
