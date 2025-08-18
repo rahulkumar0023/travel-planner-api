@@ -48,7 +48,9 @@ public class ExpenseController {
       String currency
   ) {}
 
-  @PostMapping
+  // ===== LEGACY create mapping change start =====
+  @Deprecated
+  @PostMapping("/legacy") // was: @PostMapping
   public ResponseEntity<Expense> create(@RequestBody CreateExpenseDto dto) {
     var e = new Expense();
     e.setId(UUID.randomUUID().toString());
