@@ -3,7 +3,8 @@ name: Build & Push API (Docker Hub)
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
 
 permissions:
   contents: read
