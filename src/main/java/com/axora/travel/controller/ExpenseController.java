@@ -86,24 +86,25 @@ public class ExpenseController {
         e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()));
   }
   @PutMapping("/{id}")
-  public ResponseEntity<Expense> updateExpensePut(@PathVariable String id, @RequestBody CreateExpenseDto dto) {
+  public ResponseEntity<Expense> updateExpensePut(
+      @PathVariable String id, @RequestBody ExpenseCreateRequest dto) {
     var e = expenses.findById(id).orElseThrow();
-    if (dto.tripId() != null) e.setTripId(dto.tripId());
-    if (dto.title() != null) e.setTitle(dto.title());
-    if (dto.amount() != null) e.setAmount(dto.amount());
-    if (dto.category() != null) e.setCategory(dto.category());
-    if (dto.paidBy() != null) e.setPaidBy(dto.paidBy());
-    if (dto.date() != null) e.setDate(dto.date());
-    if (dto.sharedWith() != null) e.setSharedWith(dto.sharedWith());
-    // In update (PUT/PATCH):
-    if (dto.currency() != null && !dto.currency().isBlank()) {
-      e.setCurrency(dto.currency().toUpperCase());
+    if (dto.getTripId() != null) e.setTripId(dto.getTripId());
+    if (dto.getTitle() != null) e.setTitle(dto.getTitle());
+    if (dto.getAmount() != null) e.setAmount(dto.getAmount());
+    if (dto.getCategory() != null) e.setCategory(dto.getCategory());
+    if (dto.getPaidBy() != null) e.setPaidBy(dto.getPaidBy());
+    if (dto.getDate() != null) e.setDate(dto.getDate().atStartOfDay(ZoneOffset.UTC).toInstant());
+    if (dto.getSharedWith() != null) e.setSharedWith(dto.getSharedWith());
+    if (dto.getCurrency() != null && !dto.getCurrency().isBlank()) {
+      e.setCurrency(dto.getCurrency().toUpperCase());
     }
     return ResponseEntity.ok(expenses.save(e));
   }
 
   @PatchMapping("/{id}")
-  public ResponseEntity<Expense> updateExpensePatch(@PathVariable String id, @RequestBody CreateExpenseDto dto) {
+  public ResponseEntity<Expense> updateExpensePatch(
+      @PathVariable String id, @RequestBody ExpenseCreateRequest dto) {
     return updateExpensePut(id, dto);
   }
 
