@@ -17,4 +17,3 @@ java -jar target/travel-planner-api-0.0.1-SNAPSHOT.jar
 ## Health Check
 
 `GET /health` returns `OK` when the service is running.
-test
