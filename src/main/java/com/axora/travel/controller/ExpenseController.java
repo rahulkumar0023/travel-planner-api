@@ -48,28 +48,28 @@ public class ExpenseController {
       String currency
   ) {}
 
-  // ===== LEGACY create mapping change start =====
-  @Deprecated
-  @PostMapping("/legacy") // was: @PostMapping
-  public ResponseEntity<Expense> create(@RequestBody CreateExpenseDto dto) {
-    var e = new Expense();
-    e.setId(UUID.randomUUID().toString());
-    e.setTripId(dto.tripId());
-    e.setTitle(dto.title());
-    e.setAmount(dto.amount());
-    e.setCategory(dto.category());
-    e.setPaidBy(dto.paidBy());
-    e.setDate(dto.date());
-    e.setSharedWith(dto.sharedWith()); // ⬅⬅ now compiles
-    // In your POST /expenses create method, after building 'e':
-    if (dto.currency() != null && !dto.currency().isBlank()) {
-      e.setCurrency(dto.currency().toUpperCase());
-    } else {
-      var trip = trips.findById(dto.tripId()).orElseThrow();
-      e.setCurrency(trip.getCurrency()); // default to trip base currency
-    }
-    return ResponseEntity.status(HttpStatus.CREATED).body(expenses.save(e));
-  }
+//  // ===== LEGACY create mapping change start =====
+//  @Deprecated
+//  @PostMapping("/legacy") // was: @PostMapping
+//  public ResponseEntity<Expense> create(@RequestBody CreateExpenseDto dto) {
+//    var e = new Expense();
+//    e.setId(UUID.randomUUID().toString());
+//    e.setTripId(dto.tripId());
+//    e.setTitle(dto.title());
+//    e.setAmount(dto.amount());
+//    e.setCategory(dto.category());
+//    e.setPaidBy(dto.paidBy());
+//    e.setDate(dto.date());
+//    e.setSharedWith(dto.sharedWith()); // ⬅⬅ now compiles
+//    // In your POST /expenses create method, after building 'e':
+//    if (dto.currency() != null && !dto.currency().isBlank()) {
+//      e.setCurrency(dto.currency().toUpperCase());
+//    } else {
+//      var trip = trips.findById(dto.tripId()).orElseThrow();
+//      e.setCurrency(trip.getCurrency()); // default to trip base currency
+//    }
+//    return ResponseEntity.status(HttpStatus.CREATED).body(expenses.save(e));
+//  }
 
   @GetMapping("/{tripId}")
   public List<Expense> byTrip(@PathVariable String tripId) {
