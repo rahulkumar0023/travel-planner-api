@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - main
-      - codex/add-post-and-get-endpoints-for-expenses
 
 permissions:
   contents: read
