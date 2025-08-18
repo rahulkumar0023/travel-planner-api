@@ -5,6 +5,7 @@ import com.axora.travel.dto.ExpenseDTO;
 import com.axora.travel.entities.Expense;
 import com.axora.travel.repository.ExpenseRepository;
 import com.axora.travel.repository.TripRepository;
+import com.axora.travel.service.ExpenseService;
 import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -28,9 +29,11 @@ public class ExpenseController {
 
   private final ExpenseRepository expenses;
   private final TripRepository trips;
+  private final ExpenseService expenseService;
 
-  public ExpenseController(ExpenseRepository expenses, TripRepository trips) { this.expenses = expenses;
+  public ExpenseController(ExpenseRepository expenses, TripRepository trips, ExpenseService expenseService) { this.expenses = expenses;
       this.trips = trips;
+      this.expenseService = expenseService;
   }
 
   // DTOs
