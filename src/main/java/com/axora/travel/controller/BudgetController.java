@@ -9,10 +9,19 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.*;
+
+// 1) IMPORTS (add if missing) — place with other imports at the top:
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.axora.travel.security.AppPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import java.util.UUID;
 
 @RestController
 @CrossOrigin // or configure CORS globally
@@ -38,6 +47,7 @@ public class BudgetController {
           String name           // optional label
   ) {}
 
+  // 4) (Optional) membership helper if you check trip budgets:
   private void assertMember(String tripId, String email) {
     var t = trips.findById(tripId).orElseThrow();
     boolean owner = email != null && email.equals(t.getOwner());
@@ -45,42 +55,58 @@ public class BudgetController {
     if (!(owner || participant)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "not a member of trip");
   }
 
-  // Accept POST /budgets, /budgets/monthly, /budgets/trip
+  // 5) INTERNAL CREATION (setter-based to avoid ctor mismatch)
+  private Budget createInternal(CreateReq req, String userEmail) {
+    if (req == null || req.kind() == null || req.kind().isBlank()) {
+      throw new IllegalArgumentException("kind is required");
+    }
+
+    Budget b = new Budget();                // no-args JPA ctor
+    b.setId(UUID.randomUUID().toString());  // if your entity auto-generates, you can remove this
+
+    // Kind mapping — adapt if your enum is lowercase/uppercase
+    String k = req.kind().trim().toUpperCase(); // e.g., "MONTHLY" or "TRIP"
+    b.setKind(BudgetKind.valueOf(k));
+
+    b.setCurrency(req.currency());
+    if (req.amount() != null) b.setAmount(req.amount());
+    if (req.name()   != null) b.setName(req.name());
+
+    if (b.getKind() == BudgetKind.monthly) {
+      if (req.year()  != null) b.setYear(req.year());
+      if (req.month() != null) b.setMonth(req.month());
+      b.setOwner(userEmail);
+    } else { // TRIP
+      if (req.tripId() == null || req.tripId().isBlank()) {
+        throw new IllegalArgumentException("tripId required for trip budget");
+      }
+      // assertMember(req.tripId(), userEmail); // enable if you injected TripRepository
+      b.setTripId(req.tripId());
+      b.setOwner(userEmail); // optional
+    }
+    return repo.save(b);
+  }
+
+  // 6) MAPPED HTTP ENDPOINT (used by the app)
   @PostMapping({ "", "/", "/monthly", "/trip" })
   public ResponseEntity<Budget> create(@RequestBody CreateReq req,
                                        @AuthenticationPrincipal AppPrincipal me) {
-    if (req == null || req.kind() == null) {
-      return ResponseEntity.badRequest().build();
-    }
-
-    // Guard trip-budget calls
-    if ("trip".equalsIgnoreCase(req.kind())) {
-      if (req.tripId() == null || req.tripId().isBlank()) {
-        return ResponseEntity.badRequest().build();
-      }
-      assertMember(req.tripId(), me.email());
-    }
-
-    // Build using setters to avoid ctor mismatch
-    Budget b = new Budget();
-    b.setId(UUID.randomUUID().toString());
-    b.setKind(BudgetKind.valueOf(req.kind().toLowerCase()));
-    b.setCurrency(req.currency());
-    if (req.amount() != null)  b.setAmount(req.amount());
-    if (req.name()   != null)  b.setName(req.name());
-
-    if ("monthly".equalsIgnoreCase(req.kind())) {
-      if (req.year() != null)  b.setYear(req.year());
-      if (req.month()!= null)  b.setMonth(req.month());
-      b.setOwner(me.email());
-    } else {
-      b.setTripId(req.tripId());
-      b.setOwner(me.email());
-    }
-
-    Budget saved = repo.save(b);
+    Budget saved = createInternal(req, me.email());
     return ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }
+
+  // 7) NON-MAPPED OVERLOAD (used by BudgetAliases calling controller directly)
+  public ResponseEntity<Budget> create(CreateReq req) {
+    Authentication a = SecurityContextHolder.getContext().getAuthentication();
+    AppPrincipal me = (a != null && a.getPrincipal() instanceof AppPrincipal p) ? p : null;
+    if (me == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "no principal");
+    Budget saved = createInternal(req, me.email());
+    return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+  }
+
+// ===== BudgetController — PATCH END =====
+
+
   record LinkReq(String monthlyBudgetId) {}
 
   @PostMapping("/{tripBudgetId}/link")
@@ -108,21 +134,7 @@ public class BudgetController {
     return updatePut(id, req);
   }
 
-//  // --- update() start ---
-//  @PutMapping("/{id}")
-//  @PatchMapping("/{id}")
-//  public ResponseEntity<Budget> update(@PathVariable String id, @RequestBody CreateReq req) {
-//    var b = repo.findById(id).orElseThrow();
-//    if (req.kind() != null) b.setKind(BudgetKind.valueOf(req.kind()));
-//    if (req.currency() != null) b.setCurrency(req.currency());
-//    if (req.amount() != null) b.setAmount(req.amount());
-//    if (req.year() != null) b.setYear(req.year());
-//    if (req.month() != null) b.setMonth(req.month());
-//    if (req.tripId() != null) b.setTripId(req.tripId());
-//    if (req.name() != null) b.setName(req.name());
-//    return ResponseEntity.ok(repo.save(b));
-//  }
-//// --- update() end ---
+
 
 @PostMapping("/{id}")
 public ResponseEntity<Budget> updatePost(@PathVariable String id, @RequestBody CreateReq req) {

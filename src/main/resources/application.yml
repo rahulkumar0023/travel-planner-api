@@ -12,9 +12,12 @@ server:
     port: ${PORT:8080}
 spring:
     datasource:
-        url: ${SPRING_DATASOURCE_URL}
-        username: ${SPRING_DATASOURCE_USERNAME}
-        password: ${SPRING_DATASOURCE_PASSWORD}
+#        url: ${SPRING_DATASOURCE_URL}
+#        username: ${SPRING_DATASOURCE_USERNAME}
+#        password: ${SPRING_DATASOURCE_PASSWORD}
+        url: 'jdbc:postgresql://localhost:5432/travel-api'
+        username: 'postgres'
+        password: 'securepass'
     jackson:
         serialization:
             write-dates-as-timestamps: false
@@ -24,6 +27,16 @@ spring:
     flyway:
         enabled: true
         locations: classpath:db/migration
+
+
+
+## Update env vars on the running deployment
+#    kubectl set env deployment/fraud-check-service \
+#    SPRING_DATASOURCE_URL='jdbc:postgresql://postgres:5432/amldb' \
+#    SPRING_DATASOURCE_USERNAME=postgres \
+#    SPRING_DATASOURCE_PASSWORD=securepass \
+#    SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect \
+#    SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
 # --- security config start ---
 security:
   jwt:
