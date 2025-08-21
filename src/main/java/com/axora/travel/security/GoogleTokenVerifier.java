@@ -27,7 +27,12 @@ public class GoogleTokenVerifier {
   public GoogleIdToken.Payload verify(String idToken) throws Exception {
     GoogleIdToken token = verifier.verify(idToken);
     if (token == null) throw new IllegalArgumentException("Invalid Google ID token");
-    return token.getPayload();
+    var p = token.getPayload();
+    if (p.getEmail() == null) throw new IllegalArgumentException("Google token missing email");
+    if (!Boolean.TRUE.equals(p.getEmailVerified())) {
+      throw new IllegalArgumentException("Google email not verified");
+    }
+    return p;
   }
 }
 // --- GoogleTokenVerifier end ---
