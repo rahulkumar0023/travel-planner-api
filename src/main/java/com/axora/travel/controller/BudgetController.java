@@ -29,15 +29,13 @@ public class BudgetController {
   // annotate the record
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static record CreateReq(
-          String id,           // optional; path {id} is authoritative
-          String kind,
-          String currency,
-          BigDecimal amount,
-          Integer year,
-          Integer month,
-          String tripId,
-          String name,
-          String linkedMonthlyBudgetId
+          String kind,          // "monthly" | "trip"
+          String currency,      // e.g., "EUR"
+          BigDecimal amount,    // optional
+          Integer year,         // monthly-only
+          Integer month,        // monthly-only
+          String tripId,        // trip-budget-only
+          String name           // optional label
   ) {}
 
   private void assertMember(String tripId, String email) {
@@ -51,21 +49,37 @@ public class BudgetController {
   @PostMapping({ "", "/", "/monthly", "/trip" })
   public ResponseEntity<Budget> create(@RequestBody CreateReq req,
                                        @AuthenticationPrincipal AppPrincipal me) {
-    var id = UUID.randomUUID().toString();
-    var b = new Budget(id,
-            BudgetKind.valueOf(req.kind()), // expects "monthly" or "trip"
-            req.currency(), req.amount());
-    b.setYear(req.year()); b.setMonth(req.month());
-    b.setTripId(req.tripId()); b.setName(req.name());
+    if (req == null || req.kind() == null) {
+      return ResponseEntity.badRequest().build();
+    }
 
-    if (b.getKind() == BudgetKind.monthly) {
+    // Guard trip-budget calls
+    if ("trip".equalsIgnoreCase(req.kind())) {
+      if (req.tripId() == null || req.tripId().isBlank()) {
+        return ResponseEntity.badRequest().build();
+      }
+      assertMember(req.tripId(), me.email());
+    }
+
+    // Build using setters to avoid ctor mismatch
+    Budget b = new Budget();
+    b.setId(UUID.randomUUID().toString());
+    b.setKind(BudgetKind.valueOf(req.kind().toLowerCase()));
+    b.setCurrency(req.currency());
+    if (req.amount() != null)  b.setAmount(req.amount());
+    if (req.name()   != null)  b.setName(req.name());
+
+    if ("monthly".equalsIgnoreCase(req.kind())) {
+      if (req.year() != null)  b.setYear(req.year());
+      if (req.month()!= null)  b.setMonth(req.month());
       b.setOwner(me.email());
     } else {
-      assertMember(b.getTripId(), me.email());
+      b.setTripId(req.tripId());
       b.setOwner(me.email());
     }
 
-    return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(b));
+    Budget saved = repo.save(b);
+    return ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }
   record LinkReq(String monthlyBudgetId) {}
 
@@ -79,14 +93,13 @@ public class BudgetController {
   @PutMapping("/{id}")
   public ResponseEntity<Budget> updatePut(@PathVariable String id, @RequestBody CreateReq req) {
     var b = repo.findById(id).orElseThrow();
-    if (req.kind() != null) b.setKind(BudgetKind.valueOf(req.kind()));
+    if (req.kind() != null) b.setKind(BudgetKind.valueOf(req.kind().toLowerCase()));
     if (req.currency() != null) b.setCurrency(req.currency());
     if (req.amount() != null) b.setAmount(req.amount());
     if (req.year() != null) b.setYear(req.year());
     if (req.month() != null) b.setMonth(req.month());
     if (req.tripId() != null) b.setTripId(req.tripId());
     if (req.name() != null) b.setName(req.name());
-    if (req.linkedMonthlyBudgetId() != null) b.setLinkedMonthlyBudgetId(req.linkedMonthlyBudgetId());
     return ResponseEntity.ok(repo.save(b));
   }
 

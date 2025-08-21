@@ -1,53 +1,83 @@
-// --- AppleTokenVerifier start ---
+// ▶ AppleTokenVerifier start
 package com.axora.travel.security;
 
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.JWSObjectType;
 import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.jwk.*;
-import com.nimbusds.jose.util.DefaultResourceRetriever;
+import com.nimbusds.jose.crypto.RSASSAVerifier;
+import com.nimbusds.jose.jwk.JWK;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jose.jwk.source.RemoteJWKSet;
+import com.nimbusds.jose.proc.SecurityContext;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
+import com.nimbusds.jose.util.DefaultResourceRetriever;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.net.URL;
-import java.text.ParseException;
 import java.util.List;
 
 @Component
 public class AppleTokenVerifier {
-  private final String issuer;
-  private final String audience;
-  private final DefaultResourceRetriever retriever = new DefaultResourceRetriever(5000, 5000);
+
+  private final String expectedIssuer;
+  private final String expectedAudience;
+
+  private final RemoteJWKSet<SecurityContext> jwkSource;
 
   public AppleTokenVerifier(
       @Value("${security.apple.issuer}") String issuer,
-      @Value("${security.apple.audience}") String audience) {
-    this.issuer = issuer;
-    this.audience = audience;
+      @Value("${security.apple.audience}") String audience
+  ) throws Exception {
+    this.expectedIssuer = issuer;
+    this.expectedAudience = audience;
+    var retriever = new DefaultResourceRetriever(5000, 5000);
+    this.jwkSource = new RemoteJWKSet<>(new URL("https://appleid.apple.com/auth/keys"), retriever);
   }
 
-  public com.nimbusds.jwt.JWTClaimsSet verify(String idToken) throws Exception {
+  public JWTClaimsSet verify(String idToken) throws Exception {
     SignedJWT jwt = SignedJWT.parse(idToken);
     JWSHeader header = jwt.getHeader();
 
-    // Fetch JWKS
-    var jwks = JWKSet.load(new URL("https://appleid.apple.com/auth/keys"), retriever);
-    List<JWK> matches = jwks.getKeys().stream()
-        .filter(j -> j.getKeyID().equals(header.getKeyID()))
-        .toList();
-    if (matches.isEmpty()) throw new IllegalArgumentException("Apple JWK not found");
+    if (header.getType() != null && !JWSObjectType.JWT.equals(header.getType())) {
+      throw new IllegalArgumentException("Unexpected header typ: " + header.getType());
+    }
+    if (!JWSAlgorithm.RS256.equals(header.getAlgorithm())) {
+      throw new IllegalArgumentException("Apple token must be RS256");
+    }
 
-    JWK jwk = matches.get(0);
-    if (!(jwk instanceof ECKey ecKey)) throw new IllegalArgumentException("Apple key not EC");
-    JWSVerifier verifier = new ECDSAVerifier(ecKey.toECPublicKey());
-    if (!jwt.verify(verifier)) throw new IllegalArgumentException("Invalid Apple signature");
+    var selector = new com.nimbusds.jose.proc.JWSKeySelector<SecurityContext>() {
+      @Override
+      public List<? extends JWK> selectJWSKeys(JWSHeader jwsHeader, SecurityContext context) {
+        try {
+          return jwkSource.get(jwsHeader, context);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+    var keys = selector.selectJWSKeys(header, null);
+    if (keys.isEmpty()) throw new IllegalArgumentException("Apple key not found for kid=" + header.getKeyID());
 
-    var claims = jwt.getJWTClaimsSet();
-    if (!issuer.equals(claims.getIssuer())) throw new IllegalArgumentException("Bad issuer");
-    if (!audience.equals(claims.getAudience().get(0))) throw new IllegalArgumentException("Bad audience");
+    JWK jwk = keys.get(0);
+    RSAKey rsa = jwk.toRSAKey();
+    JWSVerifier verifier = new RSASSAVerifier(rsa);
+
+    if (!jwt.verify(verifier)) {
+      throw new IllegalArgumentException("Invalid Apple signature");
+    }
+
+    JWTClaimsSet claims = jwt.getJWTClaimsSet();
+    if (!expectedIssuer.equals(claims.getIssuer())) {
+      throw new IllegalArgumentException("Invalid iss");
+    }
+    if (claims.getAudience() == null || claims.getAudience().isEmpty() ||
+        !claims.getAudience().contains(expectedAudience)) {
+      throw new IllegalArgumentException("Invalid aud");
+    }
     return claims;
   }
 }
-// --- AppleTokenVerifier end ---
+// ◀ AppleTokenVerifier end
