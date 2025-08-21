@@ -23,7 +23,7 @@ public class ExpenseServiceImpl implements ExpenseService {
     }
 
     @Override
-    public ExpenseDTO create(ExpenseCreateRequest req) {
+    public ExpenseDTO create(ExpenseCreateRequest req, String createdBy) {
         Expense e = new Expense();
         e.setId(UUID.randomUUID().toString());
         e.setTripId(req.getTripId());
@@ -35,6 +35,7 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
         e.setPaidBy(req.getPaidBy());
         e.setSharedWith(req.getSharedWith());
+        e.setCreatedBy(createdBy);
         if (req.getCurrency() != null && !req.getCurrency().isBlank()) {
             e.setCurrency(req.getCurrency().toUpperCase());
         } else {

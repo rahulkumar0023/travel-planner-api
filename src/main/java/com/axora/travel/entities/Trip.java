@@ -30,10 +30,15 @@ public class Trip {
   @Column(name = "initial_budget", precision = 12, scale = 2)
   private BigDecimal initialBudget;
 
-   @ElementCollection(fetch = FetchType.EAGER)
-   @CollectionTable(name = "trip_participants", joinColumns = @JoinColumn(name = "trip_id"))
-   @Column(name = "participant")
-   private Set<String> participants = new HashSet<>();
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name = "trip_participants", joinColumns = @JoinColumn(name = "trip_id"))
+  @Column(name = "participant")
+  private Set<String> participants = new HashSet<>();
+
+  // --- owner field start ---
+  @Column(name = "owner")
+  private String owner;
+  // --- owner field end ---
 
     // Map to snake_case columns and require values
     @Column(name = "created_at", nullable = false)

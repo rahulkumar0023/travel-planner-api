@@ -42,6 +42,11 @@ public class Expense {
   @Column(name = "currency", length = 3, nullable = false)
   private String currency;
 
+  // --- createdBy field start ---
+  @Column(name = "created_by")
+  private String createdBy;
+  // --- createdBy field end ---
+
 
   // ⬇⬇⬇ NEW: map expense_shared_with(expense_id, participant) as a collection of Strings
   @ElementCollection(fetch = FetchType.EAGER)
