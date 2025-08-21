@@ -24,3 +24,15 @@ spring:
     flyway:
         enabled: true
         locations: classpath:db/migration
+# --- security config start ---
+security:
+  jwt:
+    issuer: "travel-planner-api"
+    secret: ${JWT_SECRET:dev-insecure-change-me}
+    ttlMinutes: 1440
+  google:
+    audiences: ${GOOGLE_AUDIENCES:your-ios-client-id.apps.googleusercontent.com,your-web-client-id.apps.googleusercontent.com}
+  apple:
+    audience: ${APPLE_AUDIENCE:com.your.bundle.id}
+    issuer: https://appleid.apple.com
+# --- security config end ---

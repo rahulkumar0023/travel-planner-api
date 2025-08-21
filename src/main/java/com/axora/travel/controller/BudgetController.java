@@ -3,10 +3,14 @@ package com.axora.travel.controller;
 import com.axora.travel.entities.Budget;
 import com.axora.travel.entities.BudgetKind;
 import com.axora.travel.repository.BudgetRepository;
+import com.axora.travel.repository.TripRepository;
+import com.axora.travel.security.AppPrincipal;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -16,10 +20,11 @@ import java.util.*;
 @RequestMapping({"/budgets", "/api/budgets"})
 public class BudgetController {
   private final BudgetRepository repo;
-  public BudgetController(BudgetRepository repo) { this.repo = repo; }
+  private final TripRepository trips;
+  public BudgetController(BudgetRepository repo, TripRepository trips) { this.repo = repo; this.trips = trips; }
 
   @GetMapping
-  public List<Budget> all() { return repo.findAll(); }
+  public List<Budget> all(@AuthenticationPrincipal AppPrincipal me) { return repo.findByOwner(me.email()); }
 
   // annotate the record
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -35,15 +40,31 @@ public class BudgetController {
           String linkedMonthlyBudgetId
   ) {}
 
+  private void assertMember(String tripId, String email) {
+    var t = trips.findById(tripId).orElseThrow();
+    boolean owner = email != null && email.equals(t.getOwner());
+    boolean participant = t.getParticipants() != null && t.getParticipants().contains(email);
+    if (!(owner || participant)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "not a member of trip");
+  }
+
   // Accept POST /budgets, /budgets/monthly, /budgets/trip
   @PostMapping({ "", "/", "/monthly", "/trip" })
-  public ResponseEntity<Budget> create(@RequestBody CreateReq req) {
+  public ResponseEntity<Budget> create(@RequestBody CreateReq req,
+                                       @AuthenticationPrincipal AppPrincipal me) {
     var id = UUID.randomUUID().toString();
     var b = new Budget(id,
             BudgetKind.valueOf(req.kind()), // expects "monthly" or "trip"
             req.currency(), req.amount());
     b.setYear(req.year()); b.setMonth(req.month());
     b.setTripId(req.tripId()); b.setName(req.name());
+
+    if (b.getKind() == BudgetKind.monthly) {
+      b.setOwner(me.email());
+    } else {
+      assertMember(b.getTripId(), me.email());
+      b.setOwner(me.email());
+    }
+
     return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(b));
   }
   record LinkReq(String monthlyBudgetId) {}

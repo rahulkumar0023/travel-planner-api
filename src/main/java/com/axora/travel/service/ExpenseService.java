@@ -5,7 +5,7 @@ import com.axora.travel.dto.ExpenseDTO;
 import java.util.List;
 
 public interface ExpenseService {
-    ExpenseDTO create(ExpenseCreateRequest req);
+    ExpenseDTO create(ExpenseCreateRequest req, String createdBy);
     List<ExpenseDTO> findByTripId(String tripId);
     List<ExpenseDTO> findAll();
 }

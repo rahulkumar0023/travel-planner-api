@@ -6,6 +6,7 @@ import com.axora.travel.entities.Expense;
 import com.axora.travel.repository.ExpenseRepository;
 import com.axora.travel.repository.TripRepository;
 
+import com.axora.travel.security.AppPrincipal;
 import com.axora.travel.service.ExpenseService;
 import jakarta.validation.Valid;
 
@@ -20,7 +21,9 @@ import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/expenses")
@@ -50,7 +53,9 @@ public class ExpenseController {
   ) {}
 
   @GetMapping("/{tripId}")
-  public List<Expense> byTrip(@PathVariable String tripId) {
+  public List<Expense> byTrip(@PathVariable String tripId,
+                              @AuthenticationPrincipal AppPrincipal me) {
+    assertMember(tripId, me.email());
     return expenses.findByTripIdOrderByDateDescCreatedAtDesc(tripId);
   }
 
@@ -64,6 +69,14 @@ public class ExpenseController {
         e.getDate() == null ? null : LocalDateTime.ofInstant(e.getDate(), ZoneOffset.UTC),
         e.getPaidBy(),
         e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()));
+  }
+
+  // helper: assert user is member or owner of trip
+  private void assertMember(String tripId, String email) {
+    var t = trips.findById(tripId).orElseThrow();
+    boolean owner = email != null && email.equals(t.getOwner());
+    boolean participant = t.getParticipants() != null && t.getParticipants().contains(email);
+    if (!(owner || participant)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "not a member of trip");
   }
 
 
@@ -100,15 +113,19 @@ public class ExpenseController {
   // ===== Expenses Controller: create & list additions start =====
   @PostMapping
   public ResponseEntity<ExpenseDTO> createExpense(
-      @RequestBody @Valid ExpenseCreateRequest req) {
-    ExpenseDTO created = expenseService.create(req);
+      @RequestBody @Valid ExpenseCreateRequest req,
+      @AuthenticationPrincipal AppPrincipal me) {
+    assertMember(req.getTripId(), me.email());
+    ExpenseDTO created = expenseService.create(req, me.email());
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
   @GetMapping
   public ResponseEntity<List<ExpenseDTO>> listExpenses(
-      @RequestParam(required = false) String tripId) {
+      @RequestParam(required = false) String tripId,
+      @AuthenticationPrincipal AppPrincipal me) {
     if (tripId != null) {
+      assertMember(tripId, me.email());
       return ResponseEntity.ok(expenseService.findByTripId(tripId));
     }
     return ResponseEntity.ok(expenseService.findAll());

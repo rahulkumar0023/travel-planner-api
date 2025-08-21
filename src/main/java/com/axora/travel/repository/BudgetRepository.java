@@ -11,4 +11,9 @@ public interface BudgetRepository extends JpaRepository<Budget, String> {
     List<Budget> findByKind(BudgetKind kind);
     // If your Budget entity has `String tripId` for trip budgets:
     void deleteByTripId(String tripId);
+
+    // --- budget scoping start ---
+    List<Budget> findByKindAndOwner(BudgetKind kind, String owner);
+    List<Budget> findByOwner(String owner);
+    // --- budget scoping end ---
 }

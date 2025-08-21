@@ -22,6 +22,11 @@ public class Budget {
   private String name;
   @Column(name = "linked_monthly_budget_id") private String linkedMonthlyBudgetId;
 
+  // --- owner field start ---
+  @Column(name = "owner")
+  private String owner;
+  // --- owner field end ---
+
   public Budget() {}
   public Budget(String id, BudgetKind kind, String currency, BigDecimal amount) {
     this.id = id; this.kind = kind; this.currency = currency; this.amount = amount;

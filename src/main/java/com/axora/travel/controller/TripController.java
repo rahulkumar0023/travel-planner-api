@@ -5,6 +5,7 @@ import com.axora.travel.entities.Trip;
 import com.axora.travel.repository.BudgetRepository;
 import com.axora.travel.repository.ExpenseRepository;
 import com.axora.travel.repository.TripRepository;
+import com.axora.travel.security.AppPrincipal;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +37,8 @@ public class TripController {
   }
 
   @PostMapping
-  public TripDTO create(@RequestBody @Valid TripDTO dto) {
+  public TripDTO create(@RequestBody @Valid TripDTO dto,
+                        @AuthenticationPrincipal AppPrincipal me) {
     log.info("Received request to create trip {}", dto.name());
     Trip t = new Trip();
     t.setName(dto.name());
@@ -49,14 +52,15 @@ public class TripController {
       var csv = String.join(",", dto.spendCurrencies());
       t.setSpendCurrencies(csv);
     }
+    t.setOwner(me.email()); // 👇 NEW: owner
     t = trips.save(t);
     return toDTO(t);
   }
 
   @GetMapping
-  public List<TripDTO> all() {
+  public List<TripDTO> all(@AuthenticationPrincipal AppPrincipal me) {
     log.info("Received request to list all trips");
-    return trips.findAll().stream().map(this::toDTO).toList();
+    return trips.findVisibleTo(me.email()).stream().map(this::toDTO).toList();
   }
 
   private TripDTO toDTO(Trip t) {
