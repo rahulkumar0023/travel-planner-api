@@ -50,9 +50,15 @@ public class BudgetController {
   // 4) (Optional) membership helper if you check trip budgets:
   private void assertMember(String tripId, String email) {
     var t = trips.findById(tripId).orElseThrow();
-    boolean owner = email != null && email.equals(t.getOwner());
+    boolean owner = email != null && email.equalsIgnoreCase(t.getOwner());
     boolean participant = t.getParticipants() != null && t.getParticipants().contains(email);
-    if (!(owner || participant)) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "not a member of trip");
+
+    // allow access to orphan trips in dev to prevent lock-out
+    boolean orphan = (t.getOwner() == null || t.getOwner().isBlank())
+        && (t.getParticipants() == null || t.getParticipants().isEmpty());
+    if (!(owner || participant || orphan)) {
+      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "not a member of trip");
+    }
   }
 
   // 5) INTERNAL CREATION (setter-based to avoid ctor mismatch)
