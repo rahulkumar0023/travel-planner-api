@@ -6,8 +6,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -19,7 +17,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtService jwt;
 
@@ -28,11 +25,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
   @Override
   protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
       throws ServletException, IOException {
-    String h = req.getHeader(HttpHeaders.AUTHORIZATION);
+    String h = req.getHeader(org.springframework.http.HttpHeaders.AUTHORIZATION);
+    if (h == null) {
+      org.slf4j.LoggerFactory.getLogger(getClass()).debug("Auth: no Authorization header");
+    } else {
+      org.slf4j.LoggerFactory.getLogger(getClass()).debug("Auth: header present ({} chars)", h.length());
+    }
+
     if (h != null && h.startsWith("Bearer ")) {
       try {
         DecodedJWT d = jwt.verify(h.substring(7));
-        log.info("JWT verified: sub={}, email={}, roles={}", d.getSubject(), d.getClaim("email").asString(), Arrays.toString(d.getClaim("roles").asArray(String.class)));
+        org.slf4j.LoggerFactory.getLogger(getClass()).info(
+            "JWT OK: sub={}, email={}, roles={}",
+            d.getSubject(), d.getClaim("email").asString(),
+            java.util.Arrays.toString(d.getClaim("roles").asArray(String.class))
+        );
         String userId = d.getSubject();
         String email = d.getClaim("email").asString();
         String[] roles = d.getClaim("roles").asArray(String.class);
@@ -49,7 +56,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         at.setAuthenticated(true);
         SecurityContextHolder.getContext().setAuthentication(at);
       } catch (Exception e) {
-        log.error("JWT verification failed: {}", e.getMessage());
+        org.slf4j.LoggerFactory.getLogger(getClass()).warn("JWT invalid: {}", e.getMessage());
         // Leave unauthenticated; downstream may 401.
       }
     }
