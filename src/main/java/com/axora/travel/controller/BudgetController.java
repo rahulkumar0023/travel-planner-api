@@ -6,6 +6,7 @@ import com.axora.travel.repository.BudgetRepository;
 import com.axora.travel.repository.TripRepository;
 import com.axora.travel.security.AppPrincipal;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,13 +28,16 @@ import java.util.UUID;
 @CrossOrigin // or configure CORS globally
 // Support both plain and /api prefix, and singular endpoints your client may try
 @RequestMapping({"/budgets", "/api/budgets"})
+@Slf4j
 public class BudgetController {
   private final BudgetRepository repo;
   private final TripRepository trips;
   public BudgetController(BudgetRepository repo, TripRepository trips) { this.repo = repo; this.trips = trips; }
 
   @GetMapping
-  public List<Budget> all(@AuthenticationPrincipal AppPrincipal me) { return repo.findByOwner(me.email()); }
+  public List<Budget> all(@AuthenticationPrincipal AppPrincipal me) {
+    log.info("Balance request by user={}", me != null ? me.email() : "null");
+    return repo.findByOwner(me.email()); }
 
   // annotate the record
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -97,6 +101,7 @@ public class BudgetController {
   @PostMapping({ "", "/", "/monthly", "/trip" })
   public ResponseEntity<Budget> create(@RequestBody CreateReq req,
                                        @AuthenticationPrincipal AppPrincipal me) {
+    log.info("Balance request by user={} for trip={}", me != null ? me.email() : "null", req.tripId);
     Budget saved = createInternal(req, me.email());
     return ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }

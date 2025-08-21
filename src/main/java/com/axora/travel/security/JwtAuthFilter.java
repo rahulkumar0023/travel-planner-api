@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -18,6 +19,7 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtService jwt;
 
@@ -30,6 +32,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     if (h != null && h.startsWith("Bearer ")) {
       try {
         DecodedJWT d = jwt.verify(h.substring(7));
+        log.info("JWT verified: sub={}, email={}, roles={}", d.getSubject(), d.getClaim("email").asString(), Arrays.toString(d.getClaim("roles").asArray(String.class)));
         String userId = d.getSubject();
         String email = d.getClaim("email").asString();
         String[] roles = d.getClaim("roles").asArray(String.class);
@@ -45,7 +48,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         };
         at.setAuthenticated(true);
         SecurityContextHolder.getContext().setAuthentication(at);
-      } catch (Exception ignored) {
+      } catch (Exception e) {
+        log.error("JWT verification failed: {}", e.getMessage());
         // Leave unauthenticated; downstream may 401.
       }
     }
