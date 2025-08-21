@@ -15,7 +15,7 @@ public class WebConfig {
         registry.addMapping("/**")
             .allowedOrigins("*")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-            .allowedHeaders("Content-Type", "Authorization")
+            .allowedHeaders("Content-Type", "Authorization") // allow Authorization
             .exposedHeaders("Authorization");
       }
     };

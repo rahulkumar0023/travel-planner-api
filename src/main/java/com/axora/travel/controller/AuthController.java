@@ -47,5 +47,14 @@ public class AuthController {
     String token = jwt.issue(userId, email, roles);
     return ResponseEntity.ok(Map.of("token", token, "userId", userId, "email", email, "roles", roles));
   }
+
+  // 👇 NEW: who am I — all logs start here
+  @GetMapping("/me")
+  public java.util.Map<String,Object> me(
+      @org.springframework.security.core.annotation.AuthenticationPrincipal
+      com.axora.travel.security.AppPrincipal me) {
+    if (me == null) return java.util.Map.of("auth", "none");
+    return java.util.Map.of("email", me.email(), "userId", me.userId(), "roles", me.roles());
+  }
 }
 // --- AuthController end ---
