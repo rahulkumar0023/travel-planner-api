@@ -27,6 +27,36 @@ public class AuthController {
   public record IdTokenReq(String idToken) {}
   public record TokenRes(String jwt) {}
 
+  // 👇 NEW: /auth/dev — issue JWT for manual testing (gated by security.devAuthEnabled)
+  // dev auth endpoint start
+  @org.springframework.beans.factory.annotation.Value("${security.devAuthEnabled:false}")
+  private boolean devAuthEnabled;
+
+  public record DevReq(String email, String userId, java.util.Set<String> roles) {}
+
+  @PostMapping("/dev")
+  public ResponseEntity<?> dev(@RequestBody DevReq req) {
+    if (!devAuthEnabled) {
+      return ResponseEntity.status(403).body(java.util.Map.of("error", "dev_auth_disabled"));
+    }
+    String email = (req.email() == null || req.email().isBlank()) ? "tester@example.com" : req.email().trim();
+    String userId = (req.userId() == null || req.userId().isBlank())
+        ? ("dev-" + email.replaceAll("[^a-zA-Z0-9]", "_"))
+        : req.userId().trim();
+    java.util.Set<String> roles = (req.roles() == null || req.roles().isEmpty())
+        ? java.util.Set.of("user", "dev")
+        : req.roles();
+
+    String token = jwt.issue(userId, email, roles);  // uses your existing JwtService
+    return ResponseEntity.ok(java.util.Map.of(
+        "token", token,
+        "userId", userId,
+        "email", email,
+        "roles", roles
+    ));
+  }
+  // dev auth endpoint end
+
   @PostMapping("/google")
   public ResponseEntity<TokenRes> google(@RequestBody IdTokenReq req) throws Exception {
     var profile = google.verify(req.idToken());

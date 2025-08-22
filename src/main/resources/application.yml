@@ -51,4 +51,8 @@ security:
   apple:
     audience: ${APPLE_AUDIENCE:com.your.bundle.id}
     issuer: https://appleid.apple.com
+  # 👇 NEW: dev auth toggle (safe default false)
+  # dev-auth toggle start
+  devAuthEnabled: ${DEV_AUTH_ENABLED:false}
+  # dev-auth toggle end
 # --- security config end ---
