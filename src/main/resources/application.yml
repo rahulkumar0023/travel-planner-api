@@ -10,27 +10,39 @@ management:
                 include: health,info
 server:
     port: ${PORT:8080}
+    tomcat:
+        accesslog:
+            enabled: true
+            # remoteHost user authUser date request status bytes time userAgent
+            pattern: '%h %l %u %t "%r" %s %b %Dms "%{User-Agent}i"'
 spring:
     datasource:
-#        url: ${SPRING_DATASOURCE_URL}
-#        username: ${SPRING_DATASOURCE_USERNAME}
-#        password: ${SPRING_DATASOURCE_PASSWORD}
-        url: 'jdbc:postgresql://localhost:5432/travel-api'
-        username: 'postgres'
-        password: 'securepass'
+        url: ${SPRING_DATASOURCE_URL}
+        username: ${SPRING_DATASOURCE_USERNAME}
+        password: ${SPRING_DATASOURCE_PASSWORD}
+
     jackson:
         serialization:
             write-dates-as-timestamps: false
     jpa:
-        hibernate:
-            ddl-auto: validate
+      hibernate:
+        ddl-auto: none        # Flyway will manage schema
+      open-in-view: false
+      properties:
+        hibernate.format_sql: true
     flyway:
         enabled: true
+        baseline-on-migrate: true
         locations: classpath:db/migration
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: INFO
+    # Keep app logs, but silence chatty JWT filter
     com.axora.travel: DEBUG
+    com.axora.travel.security.JwtAuthFilter: ERROR
+    root: INFO
+    org.apache.coyote.http11: ERROR
+    org.apache.tomcat.util.net: ERROR
 
 
 ## Update env vars on the running deployment

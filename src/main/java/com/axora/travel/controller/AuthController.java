@@ -1,17 +1,23 @@
 // --- AuthController start ---
 package com.axora.travel.controller;
 
+import com.axora.travel.security.AppPrincipal;
 import com.axora.travel.security.GoogleTokenVerifier;
 import com.axora.travel.security.AppleTokenVerifier;
 import com.axora.travel.security.JwtService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
 import java.util.Set;
 
 @RestController
 @RequestMapping("/auth")
 @CrossOrigin(origins="*")
+@Slf4j
 public class AuthController {
 
   private final GoogleTokenVerifier google;
@@ -29,30 +35,34 @@ public class AuthController {
 
   // 👇 NEW: /auth/dev — issue JWT for manual testing (gated by security.devAuthEnabled)
   // dev auth endpoint start
-  @org.springframework.beans.factory.annotation.Value("${security.devAuthEnabled:false}")
+  @Value("${security.devAuthEnabled:false}")
   private boolean devAuthEnabled;
 
-  public record DevReq(String email, String userId, java.util.Set<String> roles) {}
+  public record DevReq(String email, String userId) {}
 
   @PostMapping("/dev")
   public ResponseEntity<?> dev(@RequestBody DevReq req) {
     if (!devAuthEnabled) {
-      return ResponseEntity.status(403).body(java.util.Map.of("error", "dev_auth_disabled"));
+      return ResponseEntity.status(403).body(Map.of("error", "dev_auth_disabled"));
     }
-    String email = (req.email() == null || req.email().isBlank()) ? "tester@example.com" : req.email().trim();
-    String userId = (req.userId() == null || req.userId().isBlank())
-        ? ("dev-" + email.replaceAll("[^a-zA-Z0-9]", "_"))
-        : req.userId().trim();
-    java.util.Set<String> roles = (req.roles() == null || req.roles().isEmpty())
-        ? java.util.Set.of("user", "dev")
-        : req.roles();
 
-    String token = jwt.issue(userId, email, roles);  // uses your existing JwtService
-    return ResponseEntity.ok(java.util.Map.of(
-        "token", token,
-        "userId", userId,
-        "email", email,
-        "roles", roles
+    String email = (req.email() == null || req.email().isBlank())
+            ? "tester@example.com"
+            : req.email().trim();
+
+    String userId = (req.userId() == null || req.userId().isBlank())
+            ? ("dev-" + email.replaceAll("[^a-zA-Z0-9]", "_"))
+            : req.userId().trim();
+
+    var roles = Set.of("user", "dev"); // minimal roles
+    String token = jwt.issue(userId, email, roles); // uses your existing JwtService
+    var fp = Integer.toHexString(token.hashCode());
+    log.info("issued dev jwt for {} (fp={})", email, fp.length() > 12 ? fp.substring(0,12) : fp);
+    return ResponseEntity.ok(Map.of(
+            "jwt", token,
+            "userId", userId,
+            "email", email,
+            "roles", roles
     ));
   }
   // dev auth endpoint end
@@ -72,11 +82,14 @@ public class AuthController {
   }
 
   @GetMapping("/me")
-  public java.util.Map<String,Object> me(
-      @org.springframework.security.core.annotation.AuthenticationPrincipal
-      com.axora.travel.security.AppPrincipal me) {
-    if (me == null) return java.util.Map.of("auth", "none");
-    return java.util.Map.of("email", me.email(), "userId", me.userId(), "roles", me.roles());
+  public Map<String, Object> me(@AuthenticationPrincipal AppPrincipal me) {
+    return Map.of(
+            "userId", me != null ? me.userId() : null,
+            "email",  me != null ? me.email()  : null,
+            "roles",  me != null ? me.roles()  : Set.of()
+    );
   }
+// me endpoint end
+
 }
 // --- AuthController end ---

@@ -74,9 +74,13 @@ public class BudgetController {
     Budget b = new Budget();                // no-args JPA ctor
     b.setId(UUID.randomUUID().toString());  // if your entity auto-generates, you can remove this
 
-    // Kind mapping — adapt if your enum is lowercase/uppercase
-    String k = req.kind().trim().toUpperCase(); // e.g., "MONTHLY" or "TRIP"
-    b.setKind(BudgetKind.valueOf(k));
+    // Kind mapping — enum values are lowercase in BudgetKind
+    String k = req.kind().trim().toLowerCase(); // accept MONTHLY/TRIP/etc.
+    try {
+      b.setKind(BudgetKind.valueOf(k));
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid kind: " + req.kind());
+    }
 
     b.setCurrency(req.currency());
     if (req.amount() != null) b.setAmount(req.amount());
@@ -101,7 +105,10 @@ public class BudgetController {
   @PostMapping({ "", "/", "/monthly", "/trip" })
   public ResponseEntity<Budget> create(@RequestBody CreateReq req,
                                        @AuthenticationPrincipal AppPrincipal me) {
-    log.info("Balance request by user={} for trip={}", me != null ? me.email() : "null", req.tripId);
+    if (me == null) {
+      throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "no principal");
+    }
+    log.info("Balance request by user={} for trip={}", me.email(), req.tripId());
     Budget saved = createInternal(req, me.email());
     return ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }
@@ -130,7 +137,13 @@ public class BudgetController {
   @PutMapping("/{id}")
   public ResponseEntity<Budget> updatePut(@PathVariable String id, @RequestBody CreateReq req) {
     var b = repo.findById(id).orElseThrow();
-    if (req.kind() != null) b.setKind(BudgetKind.valueOf(req.kind().toLowerCase()));
+    if (req.kind() != null) {
+      try {
+        b.setKind(BudgetKind.valueOf(req.kind().toLowerCase()));
+      } catch (IllegalArgumentException ex) {
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid kind: " + req.kind());
+      }
+    }
     if (req.currency() != null) b.setCurrency(req.currency());
     if (req.amount() != null) b.setAmount(req.amount());
     if (req.year() != null) b.setYear(req.year());
