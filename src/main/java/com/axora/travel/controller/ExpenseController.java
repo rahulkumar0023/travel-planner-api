@@ -71,19 +71,24 @@ public class ExpenseController {
         e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()));
   }
 
-  // helper: assert user is member or owner of trip
-  private void assertMember(String tripId, String email) {
-    var t = trips.findById(tripId).orElseThrow();
-    boolean owner = email != null && email.equalsIgnoreCase(t.getOwner());
-    boolean participant = t.getParticipants() != null && t.getParticipants().contains(email);
+private void assertMember(String tripId, String email) {
+    var trip = trips.findById(tripId)
+        .orElseThrow(() -> new ResponseStatusException(
+            HttpStatus.NOT_FOUND, 
+            "Trip with ID " + tripId + " not found"
+        ));
+        
+    boolean owner = email != null && email.equalsIgnoreCase(trip.getOwner());
+    boolean participant = trip.getParticipants() != null && trip.getParticipants().contains(email);
 
     // allow access to orphan trips in dev to prevent lock-out
-    boolean orphan = (t.getOwner() == null || t.getOwner().isBlank())
-        && (t.getParticipants() == null || t.getParticipants().isEmpty());
+    boolean orphan = (trip.getOwner() == null || trip.getOwner().isBlank())
+        && (trip.getParticipants() == null || trip.getParticipants().isEmpty());
+        
     if (!(owner || participant || orphan)) {
-      throw new ResponseStatusException(HttpStatus.FORBIDDEN, "not a member of trip");
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not a member of trip");
     }
-  }
+}
 
 
   @PutMapping("/{id}")
