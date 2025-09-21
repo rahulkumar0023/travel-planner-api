@@ -9,7 +9,6 @@ import com.axora.travel.security.AppPrincipal;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -26,12 +25,12 @@ import lombok.extern.slf4j.Slf4j;
 @Validated
 @Slf4j
 public class TripController {
-  private final TripRepository trips;
+  private final TripRepository tripRepo;
   private final BudgetRepository budgets;
   private final ExpenseRepository expenses;
 
-  public TripController(TripRepository trips, BudgetRepository budgets, ExpenseRepository expenses) {
-    this.trips = trips;
+  public TripController(TripRepository tripRepo, BudgetRepository budgets, ExpenseRepository expenses) {
+    this.tripRepo = tripRepo;
       this.budgets = budgets;
       this.expenses = expenses;
   }
@@ -53,14 +52,14 @@ public class TripController {
       t.setSpendCurrencies(csv);
     }
     t.setOwner(me.email()); // 👇 NEW: owner
-    t = trips.save(t);
+    t = tripRepo.save(t);
     return toDTO(t);
   }
 
   @GetMapping
   public List<TripDTO> all(@AuthenticationPrincipal AppPrincipal me) {
     log.info("Received request to list all trips");
-    return trips.findVisibleTo(me.email()).stream().map(this::toDTO).toList();
+    return tripRepo.findVisibleTo(me.email()).stream().map(this::toDTO).toList();
   }
 
   private TripDTO toDTO(Trip t) {
@@ -80,7 +79,7 @@ public class TripController {
 
   @PutMapping("/{id}")
   public TripDTO updateTripPut(@PathVariable String id, @RequestBody TripDTO dto) {
-    var t = trips.findById(id).orElseThrow();
+    var t = tripRepo.findById(id).orElseThrow();
     if (dto.name() != null) t.setName(dto.name());
     if (dto.startDate() != null) t.setStartDate(dto.startDate());
     if (dto.endDate() != null) t.setEndDate(dto.endDate());
@@ -92,7 +91,7 @@ public class TripController {
       var csv = String.join(",", dto.spendCurrencies());
       t.setSpendCurrencies(csv);
     }
-    t = trips.save(t);
+    t = tripRepo.save(t);
     return toDTO(t);
   }
 
@@ -104,7 +103,7 @@ public class TripController {
   @DeleteMapping("/{id}")
   @Transactional
   public ResponseEntity<Void> deleteTrip(@PathVariable String id) {
-    if (!trips.existsById(id)) return ResponseEntity.notFound().build();
+    if (!tripRepo.existsById(id)) return ResponseEntity.notFound().build();
 
     // 1) Delete child rows that reference this trip (order matters for FK constraints)
     try {
@@ -119,7 +118,7 @@ public class TripController {
       } catch (Exception ignored) { /* repo method name may vary; use your variant */ }
 
       // 2) Delete the trip itself
-      trips.deleteById(id);
+      tripRepo.deleteById(id);
       return ResponseEntity.noContent().build();
 
     } catch (Exception e) {
@@ -127,5 +126,34 @@ public class TripController {
       return ResponseEntity.status(500).build();
     }
   }
+
+  // 👇 NEW: join trip start
+  @PostMapping("/{tripId}/join")
+  public ResponseEntity<TripDTO> joinTrip(
+          @PathVariable String tripId,
+          @AuthenticationPrincipal AppPrincipal me,
+          @RequestParam String token) {
+    var t = tripRepo.findById(tripId).orElseThrow();
+    // TODO: validate token securely (simple check for now)
+    t.getParticipants().add(me.email());
+    var saved = tripRepo.save(t);
+
+    // Convert entity -> DTO
+    var dto = new TripDTO(
+            saved.getId(),
+            saved.getName(),
+            saved.getStartDate(),
+            saved.getEndDate(),
+            saved.getCurrency(),
+            saved.getInitialBudget(),
+            saved.getParticipants(),
+            Collections.singletonList(saved.getSpendCurrencies())  // make sure Trip.java has this getter
+    );
+
+    return ResponseEntity.ok(dto);
+  }
+// 👇 NEW: join trip end
+
+
 }
 

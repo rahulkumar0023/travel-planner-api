@@ -19,6 +19,7 @@ export JWT_SECRET=$(openssl rand -hex 64)   # strong dev secret
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/travel
 export SPRING_DATASOURCE_USERNAME=postgres
 export SPRING_DATASOURCE_PASSWORD=postgres
+
 mvn clean package
 java -jar target/travel-planner-api-0.0.1-SNAPSHOT.jar
 ```

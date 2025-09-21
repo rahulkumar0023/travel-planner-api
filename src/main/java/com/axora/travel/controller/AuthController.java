@@ -83,11 +83,12 @@ public class AuthController {
 
   @GetMapping("/me")
   public Map<String, Object> me(@AuthenticationPrincipal AppPrincipal me) {
-    return Map.of(
-            "userId", me != null ? me.userId() : null,
-            "email",  me != null ? me.email()  : null,
-            "roles",  me != null ? me.roles()  : Set.of()
-    );
+    // Map.of rejects nulls; build a mutable map to allow null user/email
+    Map<String, Object> res = new java.util.LinkedHashMap<>();
+    res.put("userId", me != null ? me.userId() : null);
+    res.put("email",  me != null ? me.email()  : null);
+    res.put("roles",  me != null ? me.roles()  : Set.of());
+    return res;
   }
 // me endpoint end
 

@@ -61,7 +61,7 @@ security:
   google:
     clientId: ${GOOGLE_CLIENT_ID:your-web-client-id.apps.googleusercontent.com}
   apple:
-    audience: ${APPLE_AUDIENCE:com.your.bundle.id}
+    audience: com.example.travelPlannerApp
     issuer: https://appleid.apple.com
   # 👇 NEW: dev auth toggle (safe default false)
   # dev-auth toggle start
