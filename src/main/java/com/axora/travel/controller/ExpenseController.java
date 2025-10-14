@@ -55,7 +55,7 @@ public class ExpenseController {
   @GetMapping("/{tripId}")
   public List<Expense> byTrip(@PathVariable String tripId,
                               @AuthenticationPrincipal AppPrincipal me) {
-    assertMember(tripId, me.email());
+    assertMember(tripId, me.email() == null ? null : me.email().toLowerCase());
     return expenses.findByTripIdOrderByDateDescCreatedAtDesc(tripId);
   }
 
@@ -68,7 +68,9 @@ public class ExpenseController {
         e.getCategory(),
         e.getDate() == null ? null : LocalDateTime.ofInstant(e.getDate(), ZoneOffset.UTC),
         e.getPaidBy(),
-        e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()));
+        e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()),
+        e.getCurrency(),
+        e.getTags() == null ? Set.of() : new HashSet<>(e.getTags()));
   }
 
 private void assertMember(String tripId, String email) {
@@ -102,6 +104,7 @@ private void assertMember(String tripId, String email) {
     if (dto.getPaidBy() != null) e.setPaidBy(dto.getPaidBy());
     if (dto.getDate() != null) e.setDate(dto.getDate().atStartOfDay(ZoneOffset.UTC).toInstant());
     if (dto.getSharedWith() != null) e.setSharedWith(dto.getSharedWith());
+    if (dto.getTags() != null) e.setTags(dto.getTags());
     if (dto.getCurrency() != null && !dto.getCurrency().isBlank()) {
       e.setCurrency(dto.getCurrency().toUpperCase());
     }
@@ -126,8 +129,9 @@ private void assertMember(String tripId, String email) {
   public ResponseEntity<ExpenseDTO> createExpense(
       @RequestBody @Valid ExpenseCreateRequest req,
       @AuthenticationPrincipal AppPrincipal me) {
-    assertMember(req.getTripId(), me.email());
-    ExpenseDTO created = expenseService.create(req, me.email());
+    String user = me.email() == null ? null : me.email().toLowerCase();
+    assertMember(req.getTripId(), user);
+    ExpenseDTO created = expenseService.create(req, user);
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
@@ -136,7 +140,8 @@ private void assertMember(String tripId, String email) {
       @RequestParam(required = false) String tripId,
       @AuthenticationPrincipal AppPrincipal me) {
     if (tripId != null) {
-      assertMember(tripId, me.email());
+      String user = me.email() == null ? null : me.email().toLowerCase();
+      assertMember(tripId, user);
       return ResponseEntity.ok(expenseService.findByTripId(tripId));
     }
     return ResponseEntity.ok(expenseService.findAll());

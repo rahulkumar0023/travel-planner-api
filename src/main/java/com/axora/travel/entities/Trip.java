@@ -35,6 +35,11 @@ public class Trip {
   @Column(name = "participant")
   private Set<String> participants = new HashSet<>();
 
+  // 👇 NEW: notes field start
+  @Column(length = 2000)
+  private String notes;
+  // 👆 NEW: notes field end
+
   // --- owner field start ---
   @Column(name = "owner")
   private String owner;
@@ -67,4 +72,3 @@ public class Trip {
     this.initialBudget = initialBudget;
   }
 }
-

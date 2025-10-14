@@ -35,6 +35,9 @@ public class ExpenseServiceImpl implements ExpenseService {
         }
         e.setPaidBy(req.getPaidBy());
         e.setSharedWith(req.getSharedWith());
+        if (req.getTags() != null) {
+            e.setTags(req.getTags());
+        }
         e.setCreatedBy(createdBy);
         if (req.getCurrency() != null && !req.getCurrency().isBlank()) {
             e.setCurrency(req.getCurrency().toUpperCase());
@@ -66,7 +69,9 @@ public class ExpenseServiceImpl implements ExpenseService {
             e.getCategory(),
             e.getDate() == null ? null : LocalDateTime.ofInstant(e.getDate(), ZoneOffset.UTC),
             e.getPaidBy(),
-            e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith())
+            e.getSharedWith() == null ? Set.of() : new HashSet<>(e.getSharedWith()),
+            e.getCurrency(),
+            e.getTags() == null ? Set.of() : new HashSet<>(e.getTags())
         );
     }
 }

@@ -5,7 +5,10 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 // Budget.java
 
@@ -26,6 +29,11 @@ public class Budget {
   @Column(name = "owner")
   private String owner;
   // --- owner field end ---
+
+  @JsonIgnore
+  @OneToMany(mappedBy = "monthlyBudget", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @OrderBy("displayOrder ASC, name ASC")
+  private Set<BudgetCategory> categories = new LinkedHashSet<>();
 
   public Budget() {}
   public Budget(String id, BudgetKind kind, String currency, BigDecimal amount) {

@@ -27,7 +27,8 @@ public class SecurityConfig {
             .anyRequest().authenticated()
         )
         .exceptionHandling(eh -> eh
-            .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+            .authenticationEntryPoint(new LoggingAuthEntryPoint())
+            .accessDeniedHandler(new LoggingAccessDeniedHandler())
         )
         .addFilterBefore(new JwtAuthFilter(jwt), UsernamePasswordAuthenticationFilter.class);
     return http.build();

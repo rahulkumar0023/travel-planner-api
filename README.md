@@ -36,15 +36,15 @@ java -jar target/travel-planner-api-0.0.1-SNAPSHOT.jar
 
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
-
+```bash 
 # install Postgres (namespace: db)
 helm uninstall pg --namespace db
 helm install pg bitnami/postgresql \
 --namespace db --create-namespace \
 --set auth.postgresPassword=postgres \
---set auth.database=travel
+--set auth.database=travel  --wait --timeout 30s
 
 # in a separate terminal
 kubectl port-forward svc/pg-postgresql -n db 5432:5432
-
+```
 

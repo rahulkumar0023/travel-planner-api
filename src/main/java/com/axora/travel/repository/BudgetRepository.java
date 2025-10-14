@@ -15,5 +15,6 @@ public interface BudgetRepository extends JpaRepository<Budget, String> {
     // --- budget scoping start ---
     List<Budget> findByKindAndOwner(BudgetKind kind, String owner);
     List<Budget> findByOwner(String owner);
+    java.util.Optional<Budget> findByKindAndOwnerAndYearAndMonth(BudgetKind kind, String owner, Integer year, Integer month);
     // --- budget scoping end ---
 }

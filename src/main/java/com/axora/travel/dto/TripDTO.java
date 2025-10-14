@@ -14,5 +14,6 @@ public record TripDTO(
         String currency,
         BigDecimal initialBudget,     // ← BigDecimal to match DB/entity
         Set<String> participants,
-        List<String> spendCurrencies // <-- add
+        List<String> spendCurrencies,
+        String notes        // 👈 NEW
 ) {}

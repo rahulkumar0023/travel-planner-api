@@ -23,5 +23,5 @@ public class ExpenseCreateRequest {
     private String category;
     private String paidBy;
     private Set<String> sharedWith;
+    private Set<String> tags;
 }
-

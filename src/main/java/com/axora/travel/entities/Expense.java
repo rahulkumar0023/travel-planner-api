@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -56,6 +57,13 @@ public class Expense {
   @Column(name = "participant")
   private Set<String> sharedWith = new LinkedHashSet<>();
 
+  // 👇 NEW: tags field start
+  @ElementCollection(fetch = FetchType.EAGER)
+  @CollectionTable(name = "expense_tags", joinColumns = @JoinColumn(name = "expense_id"))
+  @Column(name = "tag")
+  private Set<String> tags = new HashSet<>();
+  // 👆 NEW: tags field end
+
   @PrePersist
   void prePersist() {
     final var now = Instant.now();
@@ -72,5 +80,10 @@ public class Expense {
   public Set<String> getSharedWith() { return sharedWith; }
   public void setSharedWith(Set<String> sharedWith) {
     this.sharedWith = (sharedWith == null) ? new LinkedHashSet<>() : new LinkedHashSet<>(sharedWith);
+  }
+
+  public Set<String> getTags() { return tags; }
+  public void setTags(Set<String> tags) {
+    this.tags = (tags == null) ? new HashSet<>() : new HashSet<>(tags);
   }
 }

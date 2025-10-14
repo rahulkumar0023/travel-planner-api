@@ -39,7 +39,10 @@ logging:
     org.springframework.security: INFO
     # Keep app logs, but silence chatty JWT filter
     com.axora.travel: DEBUG
-    com.axora.travel.security.JwtAuthFilter: ERROR
+    com.axora.travel.security.JwtAuthFilter: DEBUG
+    com.axora.travel.security.LoggingAuthEntryPoint: INFO
+    com.axora.travel.security.LoggingAccessDeniedHandler: INFO
+    com.axora.travel.controller.ApiExceptionHandler: DEBUG
     root: INFO
     org.apache.coyote.http11: ERROR
     org.apache.tomcat.util.net: ERROR

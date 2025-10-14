@@ -2,6 +2,7 @@ package com.axora.travel.controller;
 
 import com.axora.travel.entities.Budget;
 import com.axora.travel.entities.BudgetKind;
+import com.axora.travel.entities.Trip;
 import com.axora.travel.repository.BudgetRepository;
 import com.axora.travel.repository.TripRepository;
 import com.axora.travel.security.AppPrincipal;
@@ -37,7 +38,8 @@ public class BudgetController {
   @GetMapping
   public List<Budget> all(@AuthenticationPrincipal AppPrincipal me) {
     log.info("Balance request by user={}", me != null ? me.email() : "null");
-    return repo.findByOwner(me.email()); }
+    String user = me == null ? null : (me.email() == null ? null : me.email().toLowerCase());
+    return repo.findByOwner(user); }
 
   // annotate the record
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -52,8 +54,28 @@ public class BudgetController {
   ) {}
 
   // 4) (Optional) membership helper if you check trip budgets:
-  private void assertMember(String tripId, String email) {
-    var t = trips.findById(tripId).orElseThrow();
+  private Trip assertMember(String tripId, String email) {
+    // Small tolerance for immediate follow-up requests right after trip creation
+    // in case the DB commit hasn't propagated yet.
+    Trip found = null;
+    for (int i = 0; i < 5; i++) {
+      var optTry = trips.findById(tripId);
+      if (optTry.isPresent()) { found = optTry.get(); break; }
+      try { Thread.sleep(60L); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
+    }
+    var opt = java.util.Optional.ofNullable(found);
+    if (opt.isEmpty()) {
+      // Extra diagnostics: show what the user CAN see to catch ID mismatches/races
+      try {
+        var visible = trips.findVisibleTo(email);
+        var ids = visible.stream().map(Trip::getId).limit(5).toList();
+        log.warn("Trip not found: id={} user={} visible_count={} sample_ids={}", tripId, email, visible.size(), ids);
+      } catch (Exception e) {
+        log.warn("Trip not found and failed to fetch visible list: id={} user={} err={}", tripId, email, e.getMessage());
+      }
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Trip with ID " + tripId + " not found");
+    }
+    var t = opt.get();
     boolean owner = email != null && email.equalsIgnoreCase(t.getOwner());
     boolean participant = t.getParticipants() != null && t.getParticipants().contains(email);
 
@@ -61,8 +83,10 @@ public class BudgetController {
     boolean orphan = (t.getOwner() == null || t.getOwner().isBlank())
         && (t.getParticipants() == null || t.getParticipants().isEmpty());
     if (!(owner || participant || orphan)) {
+      log.warn("Trip access denied: id={} user={} owner={} participants={}", tripId, email, t.getOwner(), t.getParticipants());
       throw new ResponseStatusException(HttpStatus.FORBIDDEN, "not a member of trip");
     }
+    return t;
   }
 
   // 5) INTERNAL CREATION (setter-based to avoid ctor mismatch)
@@ -94,11 +118,15 @@ public class BudgetController {
       if (req.tripId() == null || req.tripId().isBlank()) {
         throw new IllegalArgumentException("tripId required for trip budget");
       }
-      // assertMember(req.tripId(), userEmail); // enable if you injected TripRepository
+      var trip = assertMember(req.tripId(), userEmail);
       b.setTripId(req.tripId());
       b.setOwner(userEmail); // optional
+      // default currency to the trip's currency if none provided
+      if (b.getCurrency() == null || b.getCurrency().isBlank()) {
+        b.setCurrency(trip.getCurrency());
+      }
     }
-    return repo.save(b);
+    return repo.saveAndFlush(b);
   }
 
   // 6) MAPPED HTTP ENDPOINT (used by the app)
@@ -109,7 +137,8 @@ public class BudgetController {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "no principal");
     }
     log.info("Balance request by user={} for trip={}", me.email(), req.tripId());
-    Budget saved = createInternal(req, me.email());
+    String user = me.email() == null ? null : me.email().toLowerCase();
+    Budget saved = createInternal(req, user);
     return ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }
 
@@ -118,7 +147,8 @@ public class BudgetController {
     Authentication a = SecurityContextHolder.getContext().getAuthentication();
     AppPrincipal me = (a != null && a.getPrincipal() instanceof AppPrincipal p) ? p : null;
     if (me == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "no principal");
-    Budget saved = createInternal(req, me.email());
+    String user = me.email() == null ? null : me.email().toLowerCase();
+    Budget saved = createInternal(req, user);
     return ResponseEntity.status(HttpStatus.CREATED).body(saved);
   }
 
