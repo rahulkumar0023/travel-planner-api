@@ -24,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.axora.travel.security.AppPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @CrossOrigin // or configure CORS globally
@@ -92,7 +93,7 @@ public class BudgetController {
   // 5) INTERNAL CREATION (setter-based to avoid ctor mismatch)
   private Budget createInternal(CreateReq req, String userEmail) {
     if (req == null || req.kind() == null || req.kind().isBlank()) {
-      throw new IllegalArgumentException("kind is required");
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "kind is required");
     }
 
     Budget b = new Budget();                // no-args JPA ctor
@@ -116,7 +117,7 @@ public class BudgetController {
       b.setOwner(userEmail);
     } else { // TRIP
       if (req.tripId() == null || req.tripId().isBlank()) {
-        throw new IllegalArgumentException("tripId required for trip budget");
+        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "tripId required for trip budget");
       }
       var trip = assertMember(req.tripId(), userEmail);
       b.setTripId(req.tripId());
@@ -132,11 +133,26 @@ public class BudgetController {
   // 6) MAPPED HTTP ENDPOINT (used by the app)
   @PostMapping({ "", "/", "/monthly", "/trip" })
   public ResponseEntity<Budget> create(@RequestBody CreateReq req,
-                                       @AuthenticationPrincipal AppPrincipal me) {
+                                       @AuthenticationPrincipal AppPrincipal me,
+                                       @RequestParam(value = "tripId", required = false) String tripIdParam,
+                                       HttpServletRequest httpReq) {
     if (me == null) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "no principal");
     }
-    log.info("Balance request by user={} for trip={}", me.email(), req.tripId());
+    // Allow clients to pass tripId via query param when body omits it
+    if ((req.tripId() == null || req.tripId().isBlank()) && tripIdParam != null && !tripIdParam.isBlank()) {
+      req = new CreateReq(
+          req.kind(),
+          req.currency(),
+          req.amount(),
+          req.year(),
+          req.month(),
+          tripIdParam,
+          req.name()
+      );
+    }
+
+    log.info("Budget create by user={} path={} tripId={} kind={}", me.email(), httpReq.getRequestURI(), req.tripId(), req.kind());
     String user = me.email() == null ? null : me.email().toLowerCase();
     Budget saved = createInternal(req, user);
     return ResponseEntity.status(HttpStatus.CREATED).body(saved);
